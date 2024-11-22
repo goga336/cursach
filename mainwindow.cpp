@@ -1,33 +1,27 @@
 #include "mainwindow.h"
-#include "daytablewindow.h"
-#include "iwindow.h"
 #include "windowfactory.h"
 
-
-
-#include <QVector>
-#include <QDate>
-#include <QTimer>
-
 MainWindow::MainWindow(QWidget *parent)
-    : QMainWindow(parent), daytable(new DayTableWindow) {
-    setupUI();
+    : QMainWindow(parent), daytable(new DayTableWindow)
+{
+
 }
-// MainWindow::MainWindow(QWidget *parent)
-//     : QMainWindow(parent)
-//     , ui(new Ui::MainWindow)
-// {
-//     ui->setupUi(this);
-//     createScrollArea();
-//     resize(500, 300);
-//     DayTableWindow ff;
-
-
-// }
 
 MainWindow::~MainWindow()
 {
     delete daytable;
+}
+
+
+void MainWindow::showWindow()
+{
+    this->show();
+}
+
+void MainWindow::initialize()
+{
+    setupUI();
+    updateStatisticsUI();
 }
 
 void MainWindow::setupUI() {
@@ -118,39 +112,18 @@ void MainWindow::createScrollArea(){
     button5->setStyleSheet(buttonStyle);
     button6->setStyleSheet(buttonStyle);
 
-    QDate bestday;
-    float bestweight;
-    daytable->getBestFishingDay(bestday, bestweight);
-    recentday = new QLabel("Ваша лучшая рыбалка " + bestday.toString("dd.MM.yyyy") + ": " + QString::number(bestweight) + " кг", this);
-    int count;
-    daytable->getTotalFishingDays(count);
-    counter = new QLabel("Общее количество дней, проведенных на рыбалке: " + QString::number(count));
-
-    float temperatures;
-    float pressures;
-    float waterTemperatures;
-    float avg;
-    daytable->getAverageWeatherConditionsForSuccessfulFishing (temperatures, pressures, waterTemperatures, avg);
-    QLabel *avgWeightLabel = new QLabel("Средний вес улова за день: " + QString::number(avg, 'f', 2) + " кг");
-    QLabel *temperatureLabel = new QLabel("Среднее значение тем   пературы воздуха для дней с уловом выше среднего: " + QString::number(temperatures, 'f', 1) + " °C");
-    QLabel *pressureLabel = new QLabel("Среднее значение атмосферного давления для дней с уловом выше среднего: " + QString::number(pressures, 'f', 1) + " мм рт. ст.");
-    QLabel *waterTemperatureLabel = new QLabel("Среднее значение температуры воды для дней с уловом выше среднего: " + QString::number(waterTemperatures, 'f', 1) + " °C");
-    avgWeightLabel->setStyleSheet("font-size: 16px; color: white; font-weight: normal; padding: 5px;");
-    temperatureLabel->setStyleSheet("font-size: 16px; color: white; font-weight: normal; padding: 5px;");
-    pressureLabel->setStyleSheet("font-size: 16px; color: white; font-weight: normal; padding: 5px;");
-    waterTemperatureLabel->setStyleSheet("font-size: 16px; color: white; font-weight: normal; padding: 5px;");
-    labelwelcome->setStyleSheet("font-size: 16px; color: white; font-weight: normal; padding: 5px;");
-    counter->setStyleSheet("font-size: 16px; color: white; font-weight: normal; padding: 5px;");
-    recentday->setStyleSheet("font-size: 16px; color: white; font-weight: normal; padding: 5px;");
-
-
+    recentday = new QLabel(this);
+    counter = new QLabel(this);
+    avgWeightLabel = new QLabel(this);
+    temperatureLabel = new QLabel(this);
+    pressureLabel = new QLabel(this);
+    waterTemperatureLabel = new QLabel(this);
 
     container->setLayout(layout);
     scrollarea->setWidget(container);
     lauoutmain->addWidget(scrollarea);
     lauoutmain->addWidget(fishermanImage);
     lauoutmain->addWidget(recentday);
-    //lauoutmain->addWidget(weatherLabel);
     lauoutmain->addWidget(counter);
     lauoutmain->addWidget(temperatureLabel);
     lauoutmain->addWidget(pressureLabel );
@@ -182,6 +155,7 @@ void MainWindow::createScrollArea(){
 
 void MainWindow::hadlerButton1(){
     IWindow *window = WindowFactory::createWindow("RecordWindow", this);
+    window->initialize();
     window->showWindow();
 }
 
@@ -219,12 +193,31 @@ QString MainWindow::QVectorToString(const QVector<float> &vec) {
     return list.join(", ");
 }
 
-QLabel* MainWindow::updateFishingStatistics() {
+
+void MainWindow::updateStatisticsUI() {
     QDate bestday;
     float bestweight;
     daytable->getBestFishingDay(bestday, bestweight);
+    recentday->setText("Ваша лучшая рыбалка " + bestday.toString("dd.MM.yyyy") + ": " + QString::number(bestweight) + " кг");
 
-    QLabel *label = new QLabel("Ваша лучшая рыбалка " + bestday.toString("dd.MM.yyyy") + ": " + QString::number(bestweight) + " кг", this);
-    return label;
+    int count;
+    daytable->getTotalFishingDays(count);
+    counter->setText("Общее количество дней, проведенных на рыбалке: " + QString::number(count));
+
+    float temperatures, pressures, waterTemperatures, avg;
+    daytable->getAverageWeatherConditionsForSuccessfulFishing(temperatures, pressures, waterTemperatures, avg);
+
+    avgWeightLabel->setText("Средний вес улова за день: " + QString::number(avg, 'f', 2) + " кг");
+    temperatureLabel->setText("Среднее значение температуры воздуха для дней с уловом выше среднего: " + QString::number(temperatures, 'f', 1) + " °C");
+    pressureLabel->setText("Среднее значение атмосферного давления для дней с уловом выше среднего: " + QString::number(pressures, 'f', 1) + " мм рт. ст.");
+    waterTemperatureLabel->setText("Среднее значение температуры воды для дней с уловом выше среднего: " + QString::number(waterTemperatures, 'f', 1) + " °C");
+
+    QString labelStyle = "font-size: 16px; color: white; font-weight: normal; padding: 5px;";
+    recentday->setStyleSheet(labelStyle);
+    counter->setStyleSheet(labelStyle);
+    avgWeightLabel->setStyleSheet(labelStyle);
+    temperatureLabel->setStyleSheet(labelStyle);
+    pressureLabel->setStyleSheet(labelStyle);
+    waterTemperatureLabel->setStyleSheet(labelStyle);
 }
 

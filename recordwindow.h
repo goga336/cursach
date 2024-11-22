@@ -12,6 +12,7 @@
 #include <QPushButton>
 #include <QDoubleValidator>
 #include <QTimeEdit>
+#include <QMessageBox>
 
 class RecordWindow : public QMainWindow, public IWindow
 {
@@ -21,13 +22,8 @@ public:
     explicit RecordWindow(QWidget *parent = nullptr);
     ~RecordWindow();
     void recordFishingDay();
-    void initialize() override {
-        // Реализация метода initialize
-    }
-
-    void showWindow() override {
-        this->show();
-    }
+    void initialize() override;
+    void showWindow() override;
 
 private:
     QDoubleSpinBox *fishWeight;

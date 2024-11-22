@@ -1,17 +1,24 @@
 #include "recordwindow.h"
 #include <QtSql/QSqlDatabase>
-#include <QMessageBox>
 #include "daytablewindow.h"
 #include <QSqlError>
 
 RecordWindow::RecordWindow(QWidget *parent)
     : QMainWindow(parent)
 {
-    setupUI();
+
 }
 
 RecordWindow::~RecordWindow()
 {
+}
+void RecordWindow::showWindow()  {
+    this->show();
+}
+
+void RecordWindow::initialize()
+{
+    setupUI();
 }
 
 void RecordWindow::setupUI()

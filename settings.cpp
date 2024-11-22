@@ -20,6 +20,7 @@ settings::~settings(){
 }
 
 
+
 void settings::setupUI(){
     this->resize(200, 150);
     QPalette palette;

@@ -11,18 +11,15 @@ DayTableWindow::DayTableWindow(QWidget *parent):QMainWindow(parent)
 
 }
 
-DayTableWindow::~DayTableWindow(){}
-
-// void DayTableWindow::connectToDatabase() {
-//     if (QSqlDatabase::contains("testConnection")) {
-//         QSqlDatabase db = QSqlDatabase::database("testConnection");
-//         if (!db.isOpen()) {
-//             db.open();
-//         }
-//     } else {
-//         qDebug() << "Ошибка: соединение 'testConnection' не существует.";
-//     }
-// }
+DayTableWindow::~DayTableWindow()
+{
+    // QSqlDatabase db = QSqlDatabase::database();
+    // if (db.isOpen()) {
+    //     db.close();
+    //     QSqlDatabase::removeDatabase(QSqlDatabase::defaultConnection);
+    //     qDebug() << "База данных успешно закрыта.";
+    // }
+}
 
 
 

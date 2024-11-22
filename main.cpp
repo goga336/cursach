@@ -9,6 +9,7 @@ int main(int argc, char *argv[])
     // MainWindow w;
    // w.show();
     IWindow *window = WindowFactory::createWindow("MainWindow");
+    window->initialize();
     window->showWindow();
     return a.exec();
 }
