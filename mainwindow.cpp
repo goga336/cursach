@@ -161,27 +161,32 @@ void MainWindow::hadlerButton1(){
 
 void MainWindow::hadlerButton2(){
     IWindow *window = WindowFactory::createWindow("ViewGraphWindow", this);
+    window->initialize();
     window->showWindow();
 }
 
 void MainWindow::hadlerButton3(){
     IWindow *window = WindowFactory::createWindow("ViewRecordWindow", this);
+    window->initialize();
     window->showWindow();
 
 }
 
 void MainWindow::hadlerButton4() {
     IWindow *window = WindowFactory::createWindow("SettingsWindow", this);
+    window->initialize();
     window->showWindow();
 }
 
 void MainWindow::hadlerButton5(){
     IWindow *window = WindowFactory::createWindow("ViewWeatherWindow", this);
+    window->initialize();
     window->showWindow();
 }
 
 void MainWindow::hadlerButton6(){
     IWindow *window = WindowFactory::createWindow("ViewWeatherWindow", this);
+    window->initialize();
     window->showWindow();
 }
 

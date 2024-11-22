@@ -1,6 +1,5 @@
 #include "settings.h"
 #include "daytablewindow.h"
-#include "mainwindow.h"
 
 #include <QLineEdit>
 #include <QLabel>
@@ -12,14 +11,23 @@
 settings::settings(QWidget *parent)
     : QMainWindow{parent}
 {
+
+}
+
+settings::~settings()
+{
+
+}
+
+void settings::showWindow()
+{
+    this->show();
+}
+
+void settings::initialize()
+{
     setupUI();
 }
-
-settings::~settings(){
-
-}
-
-
 
 void settings::setupUI(){
     this->resize(200, 150);
@@ -85,7 +93,7 @@ void settings::changeSattings(){
     QString name = nameInput->text();
     DayTableWindow dayTableWindow;
     dayTableWindow.insertSettings(name);
-    emit userNameChanged(name);
+    //emit userNameChanged(name);
 
     // Вывод пути к выбранной фотографии для теста
     if (!selectedPhotoPath.isEmpty()) {

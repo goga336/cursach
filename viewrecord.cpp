@@ -9,8 +9,7 @@
 ViewRecord::ViewRecord(QWidget *parent)
     : QMainWindow(parent)
 {
-    setupUI();
-    displayRecords();
+
 
 }
 
@@ -19,6 +18,16 @@ ViewRecord::~ViewRecord()
     delete tableWidget;
 }
 
+void ViewRecord::showWindow()
+{
+    this->show();
+}
+
+void ViewRecord::initialize()
+{
+    setupUI();
+    displayRecords();
+}
 void ViewRecord::setupUI()
 {
     resize(1200, 600);

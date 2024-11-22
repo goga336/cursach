@@ -20,11 +20,20 @@ ViewGrapchic::~ViewGrapchic()
 
 }
 
+void ViewGrapchic::showWindow()
+{
+    this->show();
+}
+
+void ViewGrapchic::initialize()
+{
+    setupUI();
+}
+
 void ViewGrapchic::setupUI()
 {    comboBoxYear = new QComboBox(this);
     comboBoxYear->addItem("Все года");  // Опция для отображения всех данных
     resize(900, 900);
-    // Загрузить уникальные годы из базы данных
     QSqlQuery yearQuery("SELECT DISTINCT EXTRACT(YEAR FROM date) AS year FROM fishingday ORDER BY year");
     while (yearQuery.next()) {
         comboBoxYear->addItem(yearQuery.value(0).toString());

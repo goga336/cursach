@@ -1,29 +1,3 @@
-// #ifndef VIEWGRAPCHIC_H
-// #define VIEWGRAPCHIC_H
-
-// #include <QtCharts/QChartView>
-// #include <QtCharts/QLineSeries>
-// #include <QMainWindow>
-// #include <QVector>
-// #include <QDate>
-// #include <QSqlQuery>
-
-// class ViewGrapchic : public QMainWindow
-// {
-//     Q_OBJECT
-// public:
-//     explicit ViewGrapchic(QWidget *parent = nullptr);
-
-//     void getFromDatabasetoGraphic(QVector<QDate>& vecDate, QVector<float>& vecWeight, const QString &year);
-//     void buildgraph(const QVector<QDate>& vecDate, const QVector<float>& vecWeight);
-
-// signals:
-
-// private slots:
-//     void onYearChanged(const QString &year);
-// };
-
-// #endif // VIEWGRAPCHIC_H
 #ifndef VIEWGRAPCHIC_H
 #define VIEWGRAPCHIC_H
 
@@ -46,13 +20,8 @@ class ViewGrapchic : public QMainWindow, public IWindow
 public:
     explicit ViewGrapchic(QWidget *parent = nullptr);
     ~ViewGrapchic();
-    void initialize() override {
-        // Реализация метода initialize
-    }
-
-    void showWindow() override {
-        this->show();
-    }
+    void initialize() override;
+    void showWindow() override;
     void setupUI();
 
 

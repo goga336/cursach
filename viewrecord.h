@@ -13,19 +13,13 @@ class ViewRecord : public QMainWindow, public IWindow
 public:
     explicit ViewRecord(QWidget *parent = nullptr);
     ~ViewRecord();
-    void initialize() override {
-        // Реализация метода initialize
-    }
+    void initialize() override;
+    void showWindow() override;
 
-    void showWindow() override {
-        this->show();
-    }
-
+private:
     void displayRecords(); // Метод для отображения данных
     void setupUI();
     void saveChanges();
-
-private:
     QTableWidget *tableWidget; // Виджет для таблицы
 };
 

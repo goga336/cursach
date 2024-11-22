@@ -12,17 +12,11 @@ class settings : public QMainWindow, public IWindow
 public:
     explicit settings(QWidget *parent = nullptr);
     ~settings();
-    void initialize() override {
-        // Реализация метода initialize
-    }
-
-    void showWindow() override {
-        this->show();
-    }
-
+    void initialize() override;
+    void showWindow() override;
 
 signals:
-    void userNameChanged(const QString &newName);
+   // void userNameChanged(const QString &newName);
 
 private slots:
     void setupUI();

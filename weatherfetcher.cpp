@@ -8,8 +8,18 @@
 WeatherWindow::WeatherWindow(QWidget *parent)
     : QMainWindow(parent), networkManager(new QNetworkAccessManager(this))
 {
+
+}
+
+void WeatherWindow::initialize()
+{
     setupUI();
     fetchWeather();
+}
+
+void WeatherWindow::showWindow()
+{
+    this->show();
 }
 
 void WeatherWindow::setupUI()
@@ -36,8 +46,6 @@ void WeatherWindow::fetchWeather()
     connect(networkManager, &QNetworkAccessManager::finished, this, &WeatherWindow::handleWeatherResponse);
     networkManager->get(request);
 }
-
-
 
 
 void WeatherWindow::handleWeatherResponse(QNetworkReply *reply)
@@ -68,20 +76,4 @@ void WeatherWindow::handleWeatherResponse(QNetworkReply *reply)
     reply->deleteLater();
 }
 
-void WeatherWindow::getParams(double &temperatur, int &humidit, int &pressur, QString &descriptio, QString &cityNam) {
-    temperatur = this->temperature;
-    humidit = this->humidity;
-    pressur = this->pressure;
-    descriptio = this->description;
-    cityNam = this->cityName;
-
-    QString message = QString("Город: %1\nТемпература: %.2f °C\nВлажность: %2d%%\nДавление: %3d hPa\nОписание: %4")
-                          .arg(cityName)
-                          .arg(temperature)
-                          .arg(humidity)
-                          .arg(pressure)
-                          .arg(description);
-
-    QMessageBox::information(nullptr, "Данные о погоде", message);
-}
 

@@ -18,15 +18,9 @@ signals:
 
 public:
     explicit WeatherWindow(QWidget *parent = nullptr);
-    void getParams(double &temperatur, int &humidit, int &pressur, QString &descriptio, QString &cityNam);
     void recordFishingDay();
-    void initialize() override {
-        // Реализация метода initialize
-    }
-
-    void showWindow() override {
-        this->show();
-    }
+    void initialize() override;
+    void showWindow() override;
 
 private slots:
     void handleWeatherResponse(QNetworkReply *reply);
