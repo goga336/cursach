@@ -1,14 +1,15 @@
 #include "viewgrapchic.h"
-#include <QtCharts/QChartView>
-#include <QtCharts/QLineSeries>
-#include <QtCharts/QValueAxis>
-#include <QtCharts/QDateTimeAxis>
+#include <QChartView>
+#include <QLineSeries>
+#include <QValueAxis>
+#include <QDateTimeAxis>
 #include <QComboBox>
 #include <QVBoxLayout>
 #include <QDate>
 #include <QSqlQuery>
 #include <QSqlError>
 #include <QDebug>
+#include <QLineSeries>
 
 ViewGrapchic::ViewGrapchic(QWidget *parent)
     : QMainWindow{parent}
@@ -84,27 +85,27 @@ void ViewGrapchic::getFromDatabasetoGraphic(QVector<QDate>& vecDate, QVector<flo
 }
 
 void ViewGrapchic::buildgraph(const QVector<QDate>& vecDate, const QVector<float>& vecWeight) {
-    QtCharts::QLineSeries *series = new QtCharts::QLineSeries();
+    QLineSeries *series = new QLineSeries();
 
     for (int i = 0; i < vecDate.size(); ++i) {
         qint64 xValue = QDateTime(vecDate[i].startOfDay()).toMSecsSinceEpoch();
         series->append(xValue, vecWeight[i]);
     }
 
-    QtCharts::QChart *chart = new QtCharts::QChart();
+    QChart *chart = new QChart();
 
 
     chart->addSeries(series);
     chart->setTitle("График зависимости веса рыбы от даты");
 
-    QtCharts::QDateTimeAxis *axisX = new QtCharts::QDateTimeAxis();
+    QDateTimeAxis *axisX = new QDateTimeAxis();
     axisX->setTitleText("Дата");
     axisX->setFormat("dd.MM.yyyy");
     axisX->setTickCount(5);
     chart->addAxis(axisX, Qt::AlignBottom);
     series->attachAxis(axisX);
 
-    QtCharts::QValueAxis *axisY = new QtCharts::QValueAxis();
+    QValueAxis *axisY = new QValueAxis();
     axisY->setTitleText("Вес рыбы (кг)");
     axisY->setLabelFormat("%.1f");
     axisY->setTickCount(6);
@@ -122,7 +123,7 @@ void ViewGrapchic::buildgraph(const QVector<QDate>& vecDate, const QVector<float
         delete chartView;
     }
 
-    chartView = new QtCharts::QChartView(chart);
+    chartView = new QChartView(chart);
     chartView->setRenderHint(QPainter::Antialiasing);
     centralWidget()->layout()->addWidget(chartView);
 }

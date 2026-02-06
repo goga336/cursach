@@ -5,6 +5,7 @@
 #include <QVector>
 #include <QDate>
 #include <QString>
+#include <QChartView>
 #include "iwindow.h"
 
 namespace QtCharts {
@@ -33,7 +34,7 @@ private:
     void buildgraph(const QVector<QDate>& vecDate, const QVector<float>& vecWeight);
 
     QComboBox *comboBoxYear;                // Комбо-бокс для выбора года
-    QtCharts::QChartView *chartView = nullptr;  // Виджет для отображения графика
+    QChartView *chartView = nullptr;  // Виджет для отображения графика
 };
 
 #endif // VIEWGRAPCHIC_H
