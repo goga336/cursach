@@ -25,7 +25,7 @@ DayTableWindow::~DayTableWindow()
 
 void DayTableWindow::connectToDatabase(){
     QSqlDatabase db = QSqlDatabase::addDatabase("QPSQL");
-    db.setDatabaseName("fishingdays");
+    db.setDatabaseName("fishing_db");
     db.setHostName("localhost"); // только имя хоста
     db.setPort(5432); // указание порта
     db.setUserName("postgres");
@@ -38,14 +38,14 @@ void DayTableWindow::connectToDatabase(){
     }
     else
     {
-      //  QMessageBox::information(nullptr, "Успех", "Подключение успешно!");
+        QMessageBox::information(nullptr, "Успех", "Подключение успешно!");
     }
 }
 
 
 void DayTableWindow::insertIntoDatabase(const QDate &date, const QTime &start_time, const QTime &end_time, float weight){
     QSqlQuery query;
-    query.prepare("insert into fishingday (date, start_time, end_time, fisher_id, weight)"
+    query.prepare("insert into fishing_db (fishing_date, start_time, end_time, fisher_id, catch_weight)"
      "VALUES (:date, :start_time, :end_time, :fisher_id, :weight)");
 
     query.bindValue(":date", date);
@@ -64,7 +64,7 @@ void DayTableWindow::insertIntoDatabase(const QDate &date, const QTime &start_ti
 
 void DayTableWindow::insertSettings(QString &name){
     QSqlQuery query;
-    query.prepare("UPDATE fisher SET user_name = :name WHERE id = 1");
+    query.prepare("UPDATE fisher SET fisher_name = :name WHERE fisher_id = 1");
     query.bindValue(":name", name);
     if (!query.exec()) {
         QMessageBox::information(nullptr, "Ошибка подключения", "ошибка!", query.lastError().text());
@@ -81,7 +81,7 @@ void DayTableWindow::insertSettingsPhoto(QImage &userPhoto){
 
     // Подготовка SQL-запроса
     QSqlQuery query;
-    query.prepare("UPDATE fisher SET photo = :userPhoto WHERE id = 1");
+    query.prepare("UPDATE fisher SET fisher_photo = :userPhoto WHERE fisher_id = 1");
     query.bindValue(":userPhoto", byteArray); // Привязываем данные как bytea     // Привязываем ID пользователя
 
     // Выполнение запроса
@@ -95,7 +95,7 @@ void DayTableWindow::insertSettingsPhoto(QImage &userPhoto){
 
 void DayTableWindow::getFromDatabase(QString &name){
     QSqlQuery query;
-    query.exec("select user_name from fisher");
+    query.exec("select fisher_name from fisher");
     // QString name ;
     while (query.next()) {
 
@@ -109,7 +109,7 @@ void DayTableWindow::getFromDatabase(QString &name){
 
 void DayTableWindow::getFromDatabasetoGraphic(QVector<QDate> &vecDate, QVector<float> &vecWeight){
     QSqlQuery query;
-    query.exec("select date, weight from fishingday");
+    query.exec("select fishing_date, catch_weight from fishing_day");
     float weight;
     QDate date;
     while (query.next()){
@@ -122,7 +122,7 @@ void DayTableWindow::getFromDatabasetoGraphic(QVector<QDate> &vecDate, QVector<f
 
 void DayTableWindow::getBestFishingDay(QDate &date, float &weight){
     QSqlQuery query;
-    query.exec("SELECT date, weight FROM FishingDay WHERE weight = (SELECT MAX(weight) FROM FishingDay)");
+    query.exec("SELECT fishing_date, catch_weight FROM fishing_day WHERE catch_weight = (SELECT MAX(catch_weight) FROM fishing_day)");
     while (query.next()){
         date = query.value(0).toDate();
         weight = query.value(1).toFloat();
@@ -132,7 +132,7 @@ void DayTableWindow::getBestFishingDay(QDate &date, float &weight){
 
 void DayTableWindow::getTotalFishingDays(int &totalDays) {
     QSqlQuery query;
-    query.exec("SELECT COUNT(*) FROM FishingDay");
+    query.exec("SELECT COUNT(*) FROM fishing_day");
 
     if (query.next()) {
         totalDays = query.value(0).toInt();
@@ -145,16 +145,16 @@ void DayTableWindow::getTotalFishingDays(int &totalDays) {
 
 void DayTableWindow::getAverageWeatherConditionsForSuccessfulFishing(float &avgTemperature, float &avgPressure, float &avgWaterTemperature, float &averageWeight) {
     averageWeight = 0.0;
-    QSqlQuery avgWeightQuery("SELECT AVG(weight) FROM FishingDay");
+    QSqlQuery avgWeightQuery("SELECT AVG(catch_weight) FROM fishing_day");
     if (avgWeightQuery.next()) {
         averageWeight = avgWeightQuery.value(0).toFloat();
     }
 
     QSqlQuery avgWeatherQuery;
-    avgWeatherQuery.prepare("SELECT AVG(wc.temperature), AVG(wc.pressure), AVG(wc.water_temperature) "
-                            "FROM WheatherCondition wc "
-                            "JOIN FishingDay fd ON wc.fishingday_id = fd.id "
-                            "WHERE fd.weight > :averageWeight");
+    avgWeatherQuery.prepare("SELECT AVG(wc.air_temperature), AVG(wc.atm_pressure), AVG(wc.water_temperature) "
+                            "FROM wheather_condition wc "
+                            "JOIN fishing_day fd ON wc.fishingday_id = fd.id "
+                            "WHERE fd.catch_weight > :averageWeight");
     avgWeatherQuery.bindValue(":averageWeight", averageWeight);
 
     if (avgWeatherQuery.exec() && avgWeatherQuery.next()) {
@@ -169,7 +169,7 @@ void DayTableWindow::getAverageWeatherConditionsForSuccessfulFishing(float &avgT
 void DayTableWindow::loadFisherPhoto(QLabel *fishermanImage, int userId) {
     // SQL-запрос для получения фотографии
     QSqlQuery query;
-    query.prepare("SELECT photo FROM fisher WHERE id = :userId");
+    query.prepare("SELECT fisher_photo FROM fisher WHERE fisher_id = :userId");
     query.bindValue(":userId", userId);
 
     if (query.exec() && query.next()) {
