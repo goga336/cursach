@@ -32,7 +32,7 @@ void MainWindow::setupUI() {
 
 void MainWindow::createScrollArea(){
     QPalette palette;
-    QPixmap background("/home/goga/Desktop/study/cursav/photo/phone.jpg");
+    QPixmap background("/home/goga/Desktop/study/8_semestr/diplom/qr-code.png");
     palette.setBrush(QPalette::Window, background.scaled(this->size(), Qt::IgnoreAspectRatio, Qt::SmoothTransformation));
     this->setPalette(palette);
 
@@ -138,7 +138,7 @@ void MainWindow::createScrollArea(){
 
     mainwidget->setStyleSheet(
         "QWidget {"
-        "background-image: url(/home/goga/Desktop/study/cursav/photo/phone.jpg);"
+        "background-image: url(/home/goga/Desktop/study/8_semestr/diplom/qr-code.png);"
         "background-position: center;"
         "background-repeat: no-repeat;"
         "background-size: cover;"

@@ -13,6 +13,9 @@
 #include <QDoubleValidator>
 #include <QTimeEdit>
 #include <QMessageBox>
+#include <QComboBox>
+#include <QCheckBox>
+#include <QTextEdit>
 
 class RecordWindow : public QMainWindow, public IWindow
 {
@@ -34,6 +37,14 @@ private:
     QPushButton *send;
     QTimeEdit *startFishing;
     QTimeEdit *endFishing;
+    QDoubleSpinBox *tempAir;
+    QDoubleSpinBox *windSpeed;
+    QComboBox *timeOfDay;
+    QComboBox *windDirection;
+    QComboBox *season;
+    QComboBox *moonPhase;
+    QCheckBox *recentActivity;
+    QTextEdit *note;
     void setupUI();
 
 

@@ -1,3 +1,4 @@
+
 #include "viewrecord.h"
 #include <QHeaderView>
 #include <QDebug>

@@ -38,7 +38,7 @@ void DayTableWindow::connectToDatabase(){
     }
     else
     {
-        QMessageBox::information(nullptr, "Успех", "Подключение успешно!");
+        //QMessageBox::information(nullptr, "Успех", "Подключение успешно!");
     }
 }
 

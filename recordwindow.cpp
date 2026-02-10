@@ -25,7 +25,7 @@ void RecordWindow::setupUI()
 {
 
     this->setWindowTitle("Добавление записи о дне");
-    this->resize(400, 300);
+    this->resize(800, 600);
 
     // Создаем центральный виджет
     QWidget *centralWidget = new QWidget(this);
@@ -36,9 +36,14 @@ void RecordWindow::setupUI()
     centralWidget->setPalette(palette);
     centralWidget->setAutoFillBackground(true);// Важно для применения фона
 
+    QHBoxLayout *mainBox = new QHBoxLayout(centralWidget);
     // Настраиваем макет
-    QVBoxLayout *box = new QVBoxLayout(centralWidget);
+    QWidget *leftPanel = new QWidget();
+    QVBoxLayout *box = new QVBoxLayout(leftPanel);
     box->setSpacing(10);
+
+    QWidget *rightPanel = new QWidget();
+    QVBoxLayout *rightBox = new QVBoxLayout(rightPanel);
 
     QLabel *labelWeight = new QLabel("Вес рыбы (кг):");
     labelWeight->setStyleSheet("color: white;");
@@ -75,12 +80,22 @@ void RecordWindow::setupUI()
     endFishing->setDisplayFormat("hh:mm");
     box->addWidget(endFishing);
 
+    QLabel *tempAirl = new QLabel("Температура воздуха:");
+    tempAirl->setStyleSheet("color: white;");
+    box->addWidget(tempAirl);
+
+    tempAir = new QDoubleSpinBox(centralWidget);
+    tempAir->setRange(-50.0, 50.0);
+    tempAir->setSuffix(" °C");
+    tempAir->setValue(20.0);
+    box->addWidget(tempAir);
+
     QLabel *tempWaterl = new QLabel("Температура воды:");
     tempWaterl->setStyleSheet("color: white;");
     box->addWidget(tempWaterl);
 
     tempWater = new QDoubleSpinBox(centralWidget);
-    tempWater->setRange(-50.0, 50.0);
+    tempWater->setRange(-5.0, 50.0);
     tempWater->setSuffix(" °C");
     tempWater->setValue(20.0);
     box->addWidget(tempWater);
@@ -95,6 +110,69 @@ void RecordWindow::setupUI()
     pressureInput->setSuffix(" мм рт.ст.");
     pressureInput->setValue(760.0);
     box->addWidget(pressureInput);
+
+    QLabel *windSpeedl = new QLabel("Скорость воздуха:");
+    windSpeedl->setStyleSheet("color: white;");
+    box->addWidget(windSpeedl);
+
+    windSpeed = new QDoubleSpinBox(centralWidget);
+    windSpeed->setRange(0.0, 113.2);
+    windSpeed->setSuffix(" м/с");
+    windSpeed->setValue(0.0);
+    box->addWidget(windSpeed);
+
+    QLabel *timeOfDayl = new QLabel("Время дня:");
+    timeOfDayl->setStyleSheet("color: white;");
+    box->addWidget(timeOfDayl);
+
+    timeOfDay = new QComboBox(centralWidget);
+    timeOfDay->addItems({"День", "Ночь"});
+    box->addWidget(timeOfDay);
+
+    QLabel *windDirectionl = new QLabel("Направление ветра:");
+    windDirectionl->setStyleSheet("color: white;");
+    box->addWidget(windDirectionl);
+
+    windDirection = new QComboBox(centralWidget);
+    windDirection->addItems({"Северный", "Северо-восточный", "Юго-восточный",
+                             "Южный", "Западный", "Северо-западный",
+                             "Восточный", "Юго-западный"});
+    box->addWidget(windDirection);
+
+    QLabel *seasonl = new QLabel("Сезон:");
+    seasonl->setStyleSheet("color: white;");
+    box->addWidget(seasonl);
+
+    season = new QComboBox(centralWidget);
+    season->addItems({"Зима", "Весна", "Лето", "Осень"});
+    box->addWidget(season);
+
+    QLabel *moonPhasel = new QLabel("Фаза луны:");
+    moonPhasel->setStyleSheet("color: white;");
+    box->addWidget(moonPhasel);
+
+    moonPhase = new QComboBox(centralWidget);
+    moonPhase->addItems({"Новолуние", "Растущий серп", "Полнолуние", "Убывающий серп"});
+    box->addWidget(moonPhase);
+
+    QLabel *recentActivityl = new QLabel("Активность прессинг:");
+    recentActivityl->setStyleSheet("color: white;");
+    box->addWidget(recentActivityl);
+
+    recentActivity = new QCheckBox(centralWidget);
+    box->addWidget(recentActivity);
+
+    QLabel *notel = new QLabel("Поле для заметок:");
+    notel->setStyleSheet("color: white;");
+    box->addWidget(notel);
+
+    note = new QTextEdit();
+    note->setPlaceholderText("Введите текст здесь...");
+    mainBox->addWidget(note);
+
+    rightBox->addWidget(notel);
+    rightBox->addWidget(note);
+
 
     send = new QPushButton("Записать", centralWidget);
     box->addWidget(send);
@@ -113,12 +191,15 @@ void RecordWindow::setupUI()
     send->setStyleSheet(buttonStyle);
 
 
+    mainBox->addWidget(leftPanel);
+    mainBox->addWidget(rightPanel);
+
     centralWidget->setLayout(box);
     setCentralWidget(centralWidget);
 
 
     QSqlDatabase db = QSqlDatabase::addDatabase("QPSQL");
-    db.setDatabaseName("fishingdays");
+    db.setDatabaseName("fishing_db");
     db.setHostName("localhost");
     db.setPort(5432);
     db.setUserName("postgres");
@@ -151,7 +232,7 @@ void RecordWindow::recordFishingDay()
     }
 
     QSqlQuery query;
-    query.prepare("INSERT INTO fishingday (fisher_id, weight, date, start_time, end_time) VALUES (:user_id, :weight, :date, :start_time, :end_time)");
+    query.prepare("INSERT INTO fishing_day (fisher_id, catch_weight, fishing_date, start_time, end_time) VALUES (:user_id, :weight, :date, :start_time, :end_time)");
     query.bindValue(":date", date);
     query.bindValue(":start_time", startTime);
     query.bindValue(":end_time", endTime);
@@ -166,7 +247,7 @@ void RecordWindow::recordFishingDay()
 
     int fishingDayId = query.lastInsertId().toInt();
 
-    query.prepare("INSERT INTO WheatherCondition (temperature, pressure, water_temperature, fishingday_id) VALUES (:temperature, :pressure, :water_temperature, :fishingday_id)");
+    query.prepare("INSERT INTO WheatherCondition (air_temperature, atm_pressure, water_temperature, fishing_day_id) VALUES (:temperature, :pressure, :water_temperature, :fishingday_id)");
     query.bindValue(":temperature", waterTemperature);
     query.bindValue(":pressure", pressure);
     query.bindValue(":water_temperature", waterTemperature);

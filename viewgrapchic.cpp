@@ -35,7 +35,7 @@ void ViewGrapchic::setupUI()
 {    comboBoxYear = new QComboBox(this);
     comboBoxYear->addItem("Все года");  // Опция для отображения всех данных
     resize(900, 900);
-    QSqlQuery yearQuery("SELECT DISTINCT EXTRACT(YEAR FROM date) AS year FROM fishingday ORDER BY year");
+    QSqlQuery yearQuery("SELECT DISTINCT EXTRACT(YEAR FROM fishing_date) AS year FROM fishing_day ORDER BY year");
     while (yearQuery.next()) {
         comboBoxYear->addItem(yearQuery.value(0).toString());
     }
@@ -65,9 +65,9 @@ void ViewGrapchic::onYearChanged(const QString &year) {
 void ViewGrapchic::getFromDatabasetoGraphic(QVector<QDate>& vecDate, QVector<float>& vecWeight, const QString &year) {
     QSqlQuery query;
 
-    QString queryString = "SELECT date, weight FROM fishingday";
+    QString queryString = "SELECT fishing_date, catch_weight FROM fishing_day";
     if (!year.isEmpty() && year != "Все года") {
-        queryString += " WHERE EXTRACT(YEAR FROM date) = " + year;
+        queryString += " WHERE EXTRACT(YEAR FROM fishing_date) = " + year;
     }
 
     if (query.exec(queryString)) {
@@ -86,6 +86,18 @@ void ViewGrapchic::getFromDatabasetoGraphic(QVector<QDate>& vecDate, QVector<flo
 
 void ViewGrapchic::buildgraph(const QVector<QDate>& vecDate, const QVector<float>& vecWeight) {
     QLineSeries *series = new QLineSeries();
+
+    if (vecDate.isEmpty() || vecWeight.isEmpty()) {
+        qDebug() << "Нет данных для построения графика";
+
+        QChart *emptyChart = new QChart();
+        emptyChart->setTitle("Нет данных для отображения");
+
+        chartView = new QChartView(emptyChart);
+        chartView->setRenderHint(QPainter::Antialiasing);
+        centralWidget()->layout()->addWidget(chartView);
+        return;
+    }
 
     for (int i = 0; i < vecDate.size(); ++i) {
         qint64 xValue = QDateTime(vecDate[i].startOfDay()).toMSecsSinceEpoch();
