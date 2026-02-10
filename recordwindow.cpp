@@ -168,8 +168,7 @@ void RecordWindow::setupUI()
 
     note = new QTextEdit();
     note->setPlaceholderText("Введите текст здесь...");
-    mainBox->addWidget(note);
-
+    note->setMinimumHeight(450);
     rightBox->addWidget(notel);
     rightBox->addWidget(note);
 
@@ -194,7 +193,7 @@ void RecordWindow::setupUI()
     mainBox->addWidget(leftPanel);
     mainBox->addWidget(rightPanel);
 
-    centralWidget->setLayout(box);
+    centralWidget->setLayout(mainBox);
     setCentralWidget(centralWidget);
 
 
@@ -222,8 +221,17 @@ void RecordWindow::recordFishingDay()
     QDate date = fishDate->date();
     QTime startTime = startFishing->time();
     QTime endTime = endFishing->time();
+    double airTemperature = tempAir->value();
     double waterTemperature = tempWater->value();
     double pressure = pressureInput->value();
+
+    double windSpeedValue = windSpeed->value();
+    QString windDirectionValue = windDirection->currentText();
+    QString timeOfDayValue = timeOfDay->currentText();
+    QString seasonValue = season->currentText();
+    QString moonPhaseValue = moonPhase->currentText();
+    bool recentActivityValue = recentActivity->isChecked();
+    QString notesValue = note->toPlainText();
 
     // Проверка, что время начала меньше времени окончания
     if (startTime >= endTime) {
@@ -232,12 +240,13 @@ void RecordWindow::recordFishingDay()
     }
 
     QSqlQuery query;
-    query.prepare("INSERT INTO fishing_day (fisher_id, catch_weight, fishing_date, start_time, end_time) VALUES (:user_id, :weight, :date, :start_time, :end_time)");
+    query.prepare("INSERT INTO fishing_day (fisher_id, catch_weight, fishing_date, start_time, end_time, notes) VALUES (:user_id, :weight, :date, :start_time, :end_time, :notes)");
     query.bindValue(":date", date);
     query.bindValue(":start_time", startTime);
     query.bindValue(":end_time", endTime);
     query.bindValue(":user_id", 1);
     query.bindValue(":weight", weight);
+    query.bindValue(":notes", notesValue);
 
     if (!query.exec())
     {
@@ -247,11 +256,21 @@ void RecordWindow::recordFishingDay()
 
     int fishingDayId = query.lastInsertId().toInt();
 
-    query.prepare("INSERT INTO WheatherCondition (air_temperature, atm_pressure, water_temperature, fishing_day_id) VALUES (:temperature, :pressure, :water_temperature, :fishingday_id)");
-    query.bindValue(":temperature", waterTemperature);
+    query.prepare("INSERT INTO weather_condition (fishing_day_id, air_temperature, atm_pressure, water_temperature, "
+                  "wind_speed, wind_direction, time_of_day, season, moon_phase, recent_activity) "
+                  "VALUES (:fishingday_id, :air_temperature, :pressure, :water_temperature, "
+                  ":wind_speed, :wind_direction, :time_of_day, :season, :moon_phase, :recent_activity)");
+
+    query.bindValue(":fishingday_id", fishingDayId);
+    query.bindValue(":air_temperature", airTemperature);
     query.bindValue(":pressure", pressure);
     query.bindValue(":water_temperature", waterTemperature);
-    query.bindValue(":fishingday_id", fishingDayId);
+    query.bindValue(":wind_speed", windSpeedValue);
+    query.bindValue(":wind_direction", windDirectionValue);
+    query.bindValue(":time_of_day", timeOfDayValue);
+    query.bindValue(":season", seasonValue);
+    query.bindValue(":moon_phase", moonPhaseValue);
+    query.bindValue(":recent_activity", recentActivityValue);
 
     if (!query.exec())
     {
@@ -260,12 +279,20 @@ void RecordWindow::recordFishingDay()
     else
     {
         QMessageBox::information(nullptr, "Успех", "Данные успешно записаны!");
-        fishWeight->setValue(0); // Устанавливаем 0 для веса рыбы
-        fishDate->setDate(QDate::currentDate()); // Устанавливаем текущую дату
-        startFishing->setTime(QTime::fromString("00:00", "hh:mm")); // Устанавливаем время по умолчанию для начала
-        endFishing->setTime(QTime::fromString("00:00", "hh:mm")); // Устанавливаем время по умолчанию для окончания
-        tempWater->setValue(20.0); // Устанавливаем стандартное значение для температуры воды
+        fishWeight->setValue(0);
+        fishDate->setDate(QDate::currentDate());
+        startFishing->setTime(QTime::fromString("00:00", "hh:mm"));
+        endFishing->setTime(QTime::fromString("00:00", "hh:mm"));
+        tempAir->setValue(20.0);
+        tempWater->setValue(20.0);
         pressureInput->setValue(760.0);
+        windSpeed->setValue(0.0);
+        windDirection->setCurrentIndex(0);
+        timeOfDay->setCurrentIndex(0);
+        season->setCurrentIndex(0);
+        moonPhase->setCurrentIndex(0);
+        recentActivity->setChecked(false);
+        note->clear();
     }
 }
 
