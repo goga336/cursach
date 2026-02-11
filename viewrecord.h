@@ -17,10 +17,11 @@ public:
     void showWindow() override;
 
 private:
-    void displayRecords(); // Метод для отображения данных
+    void displayRecords();
     void setupUI();
     void saveChanges();
-    QTableWidget *tableWidget; // Виджет для таблицы
+    void deleteRecord();
+    QTableWidget *tableWidget;
 };
 
 #endif // VIEWRECORD_H
