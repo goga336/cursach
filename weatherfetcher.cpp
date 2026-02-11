@@ -27,17 +27,31 @@ void WeatherWindow::setupUI()
     this->setWindowTitle("Текущая погода");
     labelWeather = new QLabel("Загрузка данных о погоде...", this);
     QVBoxLayout *layout = new QVBoxLayout();
+
+
+    selectCity = new QComboBox();
+    selectCity->addItems({"Москва", "Санкт-Петербург", "Нижний Новгород", "Рязань", "Воронеж", "Тула", "Ярославль"});
+    layout->addWidget(selectCity);
+
     layout->addWidget(labelWeather);
+
+    connect(selectCity, &QComboBox::currentIndexChanged, this, &WeatherWindow::changeCity);
 
     QWidget *centralWidget = new QWidget(this);
     centralWidget->setLayout(layout);
     setCentralWidget(centralWidget);
 }
 
+void WeatherWindow::changeCity(){
+    city = selectCity->currentText();
+    fetchWeather();
+}
+
 void WeatherWindow::fetchWeather()
 {
+    disconnect(networkManager, &QNetworkAccessManager::finished, this, &WeatherWindow::handleWeatherResponse);
     QString apiKey = "fd1dc3c51b504a0a030e072fa0559be7";
-    QString city = "Moscow";
+
     QString url = QString("https://api.openweathermap.org/data/2.5/weather?q=%1&appid=%2&units=metric").arg(city, apiKey);
 
     QNetworkRequest request;
@@ -93,8 +107,6 @@ void WeatherWindow::handleWeatherResponse(QNetworkReply *reply)
         double feelsLike = jsonObj["main"].toObject()["feels_like"].toDouble();
         double tempMin = jsonObj["main"].toObject()["temp_min"].toDouble();
         double tempMax = jsonObj["main"].toObject()["temp_max"].toDouble();
-        //int seaLevel = jsonObj["main"].toObject()["sea_level"].toInt(); // давление на уровне моря
-        //int grndLevel = jsonObj["main"].toObject()["grnd_level"].toInt(); // давление на уровне земли
 
 
         double windSpeed = jsonObj["wind"].toObject()["speed"].toDouble();

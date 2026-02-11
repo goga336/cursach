@@ -8,6 +8,7 @@
 #include <QNetworkReply>
 #include <QLabel>
 #include <QSignalMapper>
+#include <QComboBox>
 
 class WeatherWindow : public QMainWindow, public IWindow
 {
@@ -30,15 +31,18 @@ private slots:
 private:
     QNetworkAccessManager *networkManager;
     QLabel *labelWeather;
+    QComboBox *selectCity;
 
     void setupUI();
     void fetchWeather();
+    void changeCity();
 
     double temperature;
     int humidity;
     int pressure;
     QString description;
     QString cityName;
+    QString city = "Moscow";
 };
 
 #endif // WEATHERWINDOW_H
