@@ -20,6 +20,7 @@ SOURCES += \
     viewgrapchic.cpp \
     viewrecord.cpp \
     weatherfetcher.cpp \
+    weatherservice.cpp \
     windowfactory.cpp
 
 HEADERS += \
@@ -33,6 +34,7 @@ HEADERS += \
     viewgrapchic.h \
     viewrecord.h \
     weatherfetcher.h \
+    weatherservice.h \
     windowfactory.h
 
 #FORMS += \

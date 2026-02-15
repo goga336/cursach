@@ -41,6 +41,7 @@ void MainWindow::createScrollArea(){
     QString UserName;
     daytable->getFromDatabase(UserName);
     labelwelcome = new QLabel("Добро пожаловать, " + UserName, this);
+    labelwelcome->setStyleSheet("font-size: 16px; color: white; font-weight: normal; padding: 5px;");
     lauoutmain->addWidget(labelwelcome);
     labelwelcome->setObjectName("welcomeLabel");
 
@@ -71,7 +72,7 @@ void MainWindow::createScrollArea(){
     button3->setText("Посмотреть все записи");
     button4->setText("Настройки");
     button5->setText("Погода");
-    button6->setText("Статистика");
+    button6->setText("Прогноз клева");
 
     buttonRecordDay->setObjectName("button1");
     button2->setObjectName("button2");

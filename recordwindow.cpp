@@ -2,11 +2,18 @@
 #include <QtSql/QSqlDatabase>
 #include "daytablewindow.h"
 #include <QSqlError>
+#include <QInputDialog>
 
 RecordWindow::RecordWindow(QWidget *parent)
     : QMainWindow(parent)
 {
+    weather = new WeatherService(this);  // Создаем объект сервиса погоды
 
+    // Подключаем сигналы
+    connect(weather, &WeatherService::weatherLoaded,
+            this, &RecordWindow::onWeatherLoaded);
+    connect(weather, &WeatherService::errorOccurred,
+            this, &RecordWindow::onWeatherError);
 }
 
 RecordWindow::~RecordWindow()
@@ -189,6 +196,22 @@ void RecordWindow::setupUI()
 
     send->setStyleSheet(buttonStyle);
 
+    weatherBtn = new QPushButton("Загрузить погоду", this);
+    weatherBtn->setStyleSheet(buttonStyle);
+
+    connect(weatherBtn, &QPushButton::clicked, [this]() {
+        QStringList cities = {"Москва", "Санкт-Петербург", "Нижний Новгород",
+                              "Рязань", "Воронеж", "Тула", "Ярославль"};
+        bool ok;
+        QString city = QInputDialog::getItem(this, "Выберите город",
+                                             "Город:", cities, 0, false, &ok);
+        if (ok && !city.isEmpty()) {
+            weather->requestWeather(city);
+        }
+    });
+
+    box->addWidget(weatherBtn);
+
 
     mainBox->addWidget(leftPanel);
     mainBox->addWidget(rightPanel);
@@ -296,4 +319,64 @@ void RecordWindow::recordFishingDay()
     }
 }
 
+void RecordWindow::onWeatherLoaded()
+{
+    // Заполняем поля
+    tempAir->setValue(weather->temperature);
+    tempWater->setValue(weather->temperature * 0.8);
+    pressureInput->setValue(weather->pressure * 0.750062);
+    windSpeed->setValue(weather->windSpeed);
 
+    // Направление ветра
+    QString windDir;
+    if (weather->windDeg >= 337.5 || weather->windDeg < 22.5) windDir = "Северный";
+    else if (weather->windDeg >= 22.5 && weather->windDeg < 67.5) windDir = "Северо-восточный";
+    else if (weather->windDeg >= 67.5 && weather->windDeg < 112.5) windDir = "Восточный";
+    else if (weather->windDeg >= 112.5 && weather->windDeg < 157.5) windDir = "Юго-восточный";
+    else if (weather->windDeg >= 157.5 && weather->windDeg < 202.5) windDir = "Южный";
+    else if (weather->windDeg >= 202.5 && weather->windDeg < 247.5) windDir = "Юго-западный";
+    else if (weather->windDeg >= 247.5 && weather->windDeg < 292.5) windDir = "Западный";
+    else windDir = "Северо-западный";
+
+    int index = windDirection->findText(windDir);
+    if (index >= 0) windDirection->setCurrentIndex(index);
+
+    // Время дня
+    QTime now = QTime::currentTime();
+    timeOfDay->setCurrentText(now.hour() >= 6 && now.hour() < 18 ? "День" : "Ночь");
+
+    // Сезон
+    int month = QDate::currentDate().month();
+    QString seasonStr;
+    if (month == 12 || month == 1 || month == 2) seasonStr = "Зима";
+    else if (month >= 3 && month <= 5) seasonStr = "Весна";
+    else if (month >= 6 && month <= 8) seasonStr = "Лето";
+    else seasonStr = "Осень";
+
+    int seasonIndex = season->findText(seasonStr);
+    if (seasonIndex >= 0) season->setCurrentIndex(seasonIndex);
+
+    // Заметка
+    QString weatherNote = QString("🌤 Погода из %1\n"
+                                  "Температура: %2°C\n"
+                                  "Давление: %3 мм рт.ст.\n"
+                                  "Ветер: %4 м/с, %5\n"
+                                  "Описание: %6")
+                              .arg(weather->cityName)
+                              .arg(weather->temperature, 0, 'f', 1)
+                              .arg(weather->pressure * 0.750062, 0, 'f', 0)
+                              .arg(weather->windSpeed, 0, 'f', 1)
+                              .arg(windDir)
+                              .arg(weather->description);
+
+    note->setPlainText(weatherNote);
+
+    QMessageBox::information(this, "Успех",
+                             QString("Погода для города %1 загружена!").arg(weather->cityName));
+}
+
+void RecordWindow::onWeatherError(const QString &error)
+{
+    QMessageBox::warning(this, "Ошибка",
+                         "Не удалось загрузить погоду:\n" + error);
+}
