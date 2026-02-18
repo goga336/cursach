@@ -60,12 +60,6 @@ void FishingForecastWindow::setupUI()
     mainLayout->addWidget(modelGroup);
     mainLayout->addWidget(resultGroup);
 
-    // Кнопка "Назад"
-    backButton = new QPushButton("← Назад", this);
-    backButton->setStyleSheet("QPushButton { font-size: 14px; padding: 8px; background-color: #6c757d; color: white; border-radius: 5px; }"
-                              "QPushButton:hover { background-color: #5a6268; }");
-    connect(backButton, &QPushButton::clicked, this, &FishingForecastWindow::onBackClicked);
-    mainLayout->addWidget(backButton);
 
     setCentralWidget(centralWidget);
 
@@ -208,11 +202,21 @@ void FishingForecastWindow::createResultGroup()
 
 void FishingForecastWindow::loadWeatherDataForPrediction()
 {
+    records = daytable->getAllDataForPrediction();
+    // Важно! Добавьте эту отладку
+    qDebug() << "Загружено записей в FishingForecastWindow:" << records.size();
 
-    daytable->getFromDatabasetoGraphic(dates, catches);
-
-    qDebug() << "Загружено" << dates.size() << "дней рыбалки";
+    if (records.isEmpty()) {
+        qDebug() << "ВНИМАНИЕ: records пуст!";
+    } else {
+        // Выведите первую запись для проверки
+        const auto& first = records.first();
+        qDebug() << "Первая запись - дата:" << first.date
+                 << "температура:" << first.airTemperature
+                 << "вес:" << first.catchWeight;
+    }
 }
+
 
 
 QVector<double> FishingForecastWindow::prepareFeaturesFromInput()
@@ -251,11 +255,11 @@ QVector<double> FishingForecastWindow::prepareFeaturesFromInput()
 
 bool FishingForecastWindow::trainLinearRegression()
 {
-    if (dates.isEmpty() || catches.isEmpty()) {
+    if (records.isEmpty()) {
         return false;
     }
 
-    int n_samples = dates.size();
+    int n_samples = records.size();
     int n_features = 9; // Количество признаков
 
 
@@ -263,11 +267,20 @@ bool FishingForecastWindow::trainLinearRegression()
     QVector<double> y(n_samples);
 
     for (int i = 0; i < n_samples; ++i) {
-        X[i].resize(n_features);
-        for (int j = 0; j < n_features; ++j) {
-            X[i][j] = QRandomGenerator::global()->generateDouble(); // Случайные признаки
-        }
-        y[i] = catches[i] / 10.0; // Нормализуем вес
+        const auto& record = records[i];
+        QVector<double> features;
+        features.append(normalize(record.airTemperature, -50, 50));
+        features.append(normalize(record.pressure, 700, 800));
+        features.append(normalize(record.waterTemperature, 0, 30));
+        features.append(normalize(record.windSpeed, 0, 50));
+        features.append(record.windDirection / 7.0);
+        features.append(record.timeOfDay / 3.0);
+        features.append(record.season / 3.0);
+        features.append(record.moonPhase / 3.0);
+        features.append(record.recentActivity ? 1.0 : 0.0);
+
+        X[i] = features;
+        y[i] = record.catchWeight / 10.0;  // вес улова
     }
 
     // Решаем нормальное уравнение: β = (X^T X)^(-1) X^T y
@@ -335,7 +348,7 @@ double FishingForecastWindow::predictWithModel(const QVector<double> &features)
 void FishingForecastWindow::onTrainModelClicked()
 {
 
-    if (dates.isEmpty()) {
+    if (records.isEmpty()) {
         QMessageBox::warning(this, "Предупреждение",
                              "Нет данных для обучения модели. Сначала добавьте записи о рыбалке.");
         return;
@@ -473,7 +486,3 @@ void FishingForecastWindow::updatePredictionResult(double probability, double ex
     recommendationLabel->setText("Рекомендации: " + recommendation);
 }
 
-void FishingForecastWindow::onBackClicked()
-{
-    this->close();
-}

@@ -4,6 +4,7 @@
 #include <QVector>
 #include <QBuffer>
 #include <QLabel>
+#include <QDateTime>
 
 DayTableWindow::DayTableWindow(QWidget *parent):QMainWindow(parent)
 {
@@ -118,6 +119,85 @@ void DayTableWindow::getFromDatabasetoGraphic(QVector<QDate> &vecDate, QVector<f
         vecDate.append(date);
         vecWeight.append(weight);
     }
+}
+
+QVector<FishingRecord> DayTableWindow::getAllDataForPrediction(){
+    QVector<FishingRecord> records;
+    QSqlQuery query;
+
+    qDebug() << "Начинаем загрузку данных для прогноза...";
+
+    // Исправленный запрос с JOIN
+    query.exec("SELECT fd.fishing_date, wc.water_temperature, wc.air_temperature, "
+               "wc.wind_speed, wc.atm_pressure, wc.wind_direction, wc.time_of_day, "
+               "wc.season, wc.moon_phase, wc.recent_activity, fd.catch_weight "
+               "FROM weather_condition wc "
+               "JOIN fishing_day fd ON wc.fishing_day_id = fd.fishing_day_id");
+
+    if (!query.isActive()) {
+        qDebug() << "Ошибка запроса:" << query.lastError().text();
+        return records;
+    }
+
+    int count = 0;
+    while (query.next()) {
+        count++;
+        FishingRecord record;
+
+        // fishing_date - это QDate, конвертируем в QDateTime
+        QString dateStr = query.value("fishing_date").toString();
+        record.date = QDateTime::fromString(dateStr, Qt::ISODate);
+        record.waterTemperature = query.value("water_temperature").toDouble();
+        record.airTemperature = query.value("air_temperature").toDouble();
+        record.windSpeed = query.value("wind_speed").toDouble();
+        record.pressure = query.value("atm_pressure").toDouble();
+
+        // Преобразование строк в индексы
+        QString windDir = query.value("wind_direction").toString();
+        if (windDir == "Северный") record.windDirection = 0;
+        else if (windDir == "Северо-восточный") record.windDirection = 1;
+        else if (windDir == "Восточный") record.windDirection = 2;
+        else if (windDir == "Юго-восточный") record.windDirection = 3;
+        else if (windDir == "Южный") record.windDirection = 4;
+        else if (windDir == "Юго-западный") record.windDirection = 5;
+        else if (windDir == "Западный") record.windDirection = 6;
+        else if (windDir == "Северо-западный") record.windDirection = 7;
+
+        QString timeDay = query.value("time_of_day").toString();
+        if (timeDay == "Утро") record.timeOfDay = 0;
+        else if (timeDay == "День") record.timeOfDay = 1;
+        else if (timeDay == "Вечер") record.timeOfDay = 2;
+        else if (timeDay == "Ночь") record.timeOfDay = 3;
+
+        QString seasonStr = query.value("season").toString();
+        if (seasonStr == "Весна") record.season = 0;
+        else if (seasonStr == "Лето") record.season = 1;
+        else if (seasonStr == "Осень") record.season = 2;
+        else if (seasonStr == "Зима") record.season = 3;
+
+        QString moon = query.value("moon_phase").toString();
+        if (moon == "Новолуние") record.moonPhase = 0;
+        else if (moon == "Растущая") record.moonPhase = 1;
+        else if (moon == "Полнолуние") record.moonPhase = 2;
+        else if (moon == "Убывающая") record.moonPhase = 3;
+
+        record.recentActivity = query.value("recent_activity").toBool();
+        record.catchWeight = query.value("catch_weight").toDouble();
+
+        records.append(record);
+    }
+
+    qDebug() << "Загружено записей:" << count;
+
+    // Проверка первой записи для отладки
+    if (!records.isEmpty()) {
+        const auto& first = records.first();
+        qDebug() << "Первая запись - дата:" << first.date.toString("yyyy-MM-dd")
+                 << "темп. воздуха:" << first.airTemperature
+                 << "вес:" << first.catchWeight;
+    }
+
+    return records;
 }
 
 void DayTableWindow::getBestFishingDay(QDate &date, float &weight){

@@ -10,6 +10,20 @@
 #include <QTime>
 #include <QDate>
 
+struct FishingRecord {
+    QDateTime date;
+    double waterTemperature;
+    double airTemperature;
+    double windSpeed;
+    double pressure;
+    int windDirection;
+    int timeOfDay;
+    int season;
+    int moonPhase;
+    bool recentActivity;
+    double catchWeight;
+};
+
 class DayTableWindow: public QMainWindow
 {
 public:
@@ -25,6 +39,7 @@ public:
     void getAverageWeatherConditionsForSuccessfulFishing(float &avgTemperature, float &avgPressure, float &avgWaterTemperature, float &averageWeight);
     void insertSettingsPhoto(QImage &userPhoto);
     void loadFisherPhoto(QLabel *fishermanImage, int userId);
+    QVector<FishingRecord> getAllDataForPrediction();
 };
 
 #endif // DAYTABLEWINDOW_H

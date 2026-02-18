@@ -44,7 +44,6 @@ private slots:
     void onTrainModelClicked();
     void onLoadModelClicked();
     void onMakePredictionClicked();
-    void onBackClicked();
 
 private:
     void setupUI();
@@ -93,6 +92,8 @@ private:
 
     bool modelLoaded;
     QString currentModelPath;
+
+    QVector<FishingRecord> records;
 };
 
 #endif // FISHINGFORECASTWINDOW_H
