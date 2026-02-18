@@ -17,6 +17,7 @@
 #include <QCheckBox>
 #include <QTextEdit>
 
+#include "weatherservice.h"
 class RecordWindow : public QMainWindow, public IWindow
 {
     Q_OBJECT
@@ -35,6 +36,7 @@ private:
     QDoubleSpinBox *tempWater;
     QDoubleSpinBox *pressureInput;
     QPushButton *send;
+    QPushButton * weatherBtn;
     QTimeEdit *startFishing;
     QTimeEdit *endFishing;
     QDoubleSpinBox *tempAir;
@@ -46,6 +48,11 @@ private:
     QCheckBox *recentActivity;
     QTextEdit *note;
     void setupUI();
+
+    WeatherService *weather;
+
+    void onWeatherLoaded();
+    void onWeatherError(const QString &error);
 
 
 

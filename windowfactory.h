@@ -7,6 +7,7 @@
 #include "weatherfetcher.h"
 #include "settings.h"
 #include "iwindow.h"
+#include "fishingforecastwindow.h"
 
 class WindowFactory {
 public:
@@ -23,6 +24,8 @@ public:
             return new WeatherWindow(parent);
         }else if (type == "MainWindow") {
             return new MainWindow(parent);
+        }else if (type == "FishingForecastWindow") {
+            return new FishingForecastWindow(parent);
         }
         return nullptr;
     }

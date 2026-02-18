@@ -10,6 +10,7 @@ CONFIG += c++17
 
 SOURCES += \
     daytablewindow.cpp \
+    fishingforecastwindow.cpp \
     iwindow.cpp \
     main.cpp \
     mainwindow.cpp \
@@ -20,10 +21,12 @@ SOURCES += \
     viewgrapchic.cpp \
     viewrecord.cpp \
     weatherfetcher.cpp \
+    weatherservice.cpp \
     windowfactory.cpp
 
 HEADERS += \
     daytablewindow.h \
+    fishingforecastwindow.h \
     iwindow.h \
     mainwindow.h \
     recordwindow.h \
@@ -33,6 +36,7 @@ HEADERS += \
     viewgrapchic.h \
     viewrecord.h \
     weatherfetcher.h \
+    weatherservice.h \
     windowfactory.h
 
 #FORMS += \

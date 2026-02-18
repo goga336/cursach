@@ -152,8 +152,8 @@ void DayTableWindow::getAverageWeatherConditionsForSuccessfulFishing(float &avgT
 
     QSqlQuery avgWeatherQuery;
     avgWeatherQuery.prepare("SELECT AVG(wc.air_temperature), AVG(wc.atm_pressure), AVG(wc.water_temperature) "
-                            "FROM wheather_condition wc "
-                            "JOIN fishing_day fd ON wc.fishingday_id = fd.id "
+                            "FROM weather_condition wc "
+                            "JOIN fishing_day fd ON wc.fishing_day_id = fd.fishing_day_id "
                             "WHERE fd.catch_weight > :averageWeight");
     avgWeatherQuery.bindValue(":averageWeight", averageWeight);
 
