@@ -3,6 +3,7 @@
 
 #include "iwindow.h"
 #include "daytablewindow.h"
+#include "weatherservice.h"
 #include <QMainWindow>
 #include <QWidget>
 #include <QLabel>
@@ -25,6 +26,7 @@ struct LinearRegressionModel {
     QVector<double> coefficients;
     double intercept;
     bool isValid;
+    double maxWeight;
 
     LinearRegressionModel() : intercept(0.0), isValid(false) {}
 };
@@ -52,11 +54,17 @@ private:
     void createResultGroup();
     void loadWeatherDataForPrediction();
     void updatePredictionResult(double probability, double expectedWeight);
+    void exportToCSV();
+    void trainModelPy();
+    bool loadPythonModel(const QString& filename);
 
 
     bool trainLinearRegression();
     double predictWithModel(const QVector<double> &features);
     QVector<double> prepareFeaturesFromInput();
+
+    void onWeatherLoaded();
+    void onWeatherError(const QString &error);
 
     DayTableWindow *daytable;
     QGroupBox *inputGroup;
@@ -83,6 +91,7 @@ private:
     QLabel *recommendationLabel;
     QPushButton *predictButton;
     QPushButton *backButton;
+    QPushButton *weatherButton;
 
 
     QVector<QDate> dates;
@@ -94,6 +103,8 @@ private:
     QString currentModelPath;
 
     QVector<FishingRecord> records;
+
+    WeatherService *weather;
 };
 
 #endif // FISHINGFORECASTWINDOW_H

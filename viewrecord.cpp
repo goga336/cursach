@@ -80,6 +80,11 @@ void ViewRecord::setupUI()
 
 
     tableWidget->setAlternatingRowColors(true);
+    //tableWidget->horizontalHeader()->setSectionsClickable(true);
+    tableWidget->setSortingEnabled(true);
+    //connect(tableWidget->horizontalHeader(), &QHeaderView::sectionClicked, this, &ViewRecord::saveChanges);
+
+
 
     QPushButton *saveButton = new QPushButton("Внести изменения", this);
     QString saveButtonStyle = "QPushButton {"
@@ -241,7 +246,6 @@ void ViewRecord::displayRecords()
 
         row++;
     }
-
     qDebug() << "Загружено записей:" << row;
 }
 

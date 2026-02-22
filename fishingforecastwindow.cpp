@@ -12,6 +12,11 @@
 #include <QFile>
 #include <QTextStream>
 #include <QRegularExpression>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QJsonArray>
+#include <QProcess>
+#include <QInputDialog>
 
 
 double normalize(double value, double min, double max) {
@@ -25,6 +30,13 @@ FishingForecastWindow::FishingForecastWindow(QWidget *parent)
     , modelLoaded(false)
 {
     model.isValid = false;
+    weather = new WeatherService(this);  // Создаем объект сервиса погоды
+
+    // Подключаем сигналы
+    connect(weather, &WeatherService::weatherLoaded,
+            this, &FishingForecastWindow::onWeatherLoaded);
+    connect(weather, &WeatherService::errorOccurred,
+            this, &FishingForecastWindow::onWeatherError);
 }
 
 FishingForecastWindow::~FishingForecastWindow()
@@ -131,6 +143,30 @@ void FishingForecastWindow::createInputGroup()
     // Недавняя активность
     recentActivityCheck = new QCheckBox("Была ли недавняя активность рыбы?", this);
     layout->addRow("", recentActivityCheck);
+
+    weatherButton = new QPushButton ("Загрузить погоду");
+    weatherButton->setStyleSheet("QPushButton {"
+                                 "font-size: 14px;"
+                                 "font-weight: bold;"
+                                 "color: white;"
+                                 "background-color: #007BFF;"
+                                 "border-radius: 5px;"
+                                 "padding: 8px;"
+                                 "}"
+                                 "QPushButton:hover {"
+                                 "background-color: #0056b3;"
+                                 "}");
+    layout->addRow("", weatherButton);
+    connect(weatherButton, &QPushButton::clicked, [this]() {
+        QStringList cities = {"Москва", "Санкт-Петербург", "Нижний Новгород",
+                              "Рязань", "Воронеж", "Тула", "Ярославль"};
+        bool ok;
+        QString city = QInputDialog::getItem(this, "Выберите город",
+                                             "Город:", cities, 0, false, &ok);
+        if (ok && !city.isEmpty()) {
+            weather->requestWeather(city);
+        }
+    });
 }
 
 void FishingForecastWindow::createModelGroup()
@@ -218,6 +254,71 @@ void FishingForecastWindow::loadWeatherDataForPrediction()
 }
 
 
+
+void FishingForecastWindow::exportToCSV()
+{
+    QFile file("fishing_data.csv");
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Text))
+        return;
+
+    QTextStream out(&file);
+    out << "air_temperature,pressure,water_temperature,wind_speed,"
+        << "wind_direction,time_of_day,season,moon_phase,recent_activity,catch_weight\n";
+
+   // QVector<FishingRecord> records = getAllDataForPrediction();
+    for (const auto& r : records) {
+        out << r.airTemperature << "," << r.pressure << ","
+            << r.waterTemperature << "," << r.windSpeed << ","
+            << r.windDirection << "," << r.timeOfDay << ","
+            << r.season << "," << r.moonPhase << ","
+            << (r.recentActivity ? 1 : 0) << ","
+            << r.catchWeight << "\n";
+    }
+    file.close();
+}
+
+bool FishingForecastWindow::loadPythonModel(const QString& filename) {
+    QFile file(filename);
+    if (!file.open(QIODevice::ReadOnly))
+        return false;
+
+    QByteArray data = file.readAll();
+    QJsonDocument doc = QJsonDocument::fromJson(data);
+    QJsonObject obj = doc.object();
+
+    QJsonArray coefArray = obj["coefficients"].toArray();
+    model.coefficients.resize(coefArray.size());
+    for (int i = 0; i < coefArray.size(); ++i)
+        model.coefficients[i] = coefArray[i].toDouble();
+
+    model.intercept = obj["intercept"].toDouble();
+    model.maxWeight = obj["max_weight"].toDouble(); // нужно добавить в структуру
+    model.isValid = true;
+
+    return true;
+}
+
+void FishingForecastWindow::trainModelPy() {
+    exportToCSV();
+
+    QProcess process;
+    process.start("python", QStringList() << "/home/goga/Desktop/study/8_semestr/diplom/fish_app/cursach/trainmodel.py");
+    process.waitForFinished(-1); // ждём завершения
+
+    if (process.exitCode() != 0) {
+        QMessageBox::critical(this, "Ошибка",
+                              "Python-скрипт завершился с ошибкой:\n" +
+                                  process.readAllStandardError());
+        return;
+    }
+
+    if (loadPythonModel("model_coefficients.json")) {
+        modelLoaded = true;
+        modelStatusLabel->setText("Модель обучена через Python");
+        modelStatusLabel->setStyleSheet("color: #28a745; font-style: normal;");
+        QMessageBox::information(this, "Успех", "Модель обучена через Python!");
+    }
+}
 
 QVector<double> FishingForecastWindow::prepareFeaturesFromInput()
 {
@@ -345,49 +446,69 @@ double FishingForecastWindow::predictWithModel(const QVector<double> &features)
     return qBound(0.0, prediction, 1.0);
 }
 
+
 void FishingForecastWindow::onTrainModelClicked()
 {
-
     if (records.isEmpty()) {
         QMessageBox::warning(this, "Предупреждение",
                              "Нет данных для обучения модели. Сначала добавьте записи о рыбалке.");
         return;
     }
 
-
     trainingProgress->setVisible(true);
     trainingProgress->setValue(0);
-    modelStatusLabel->setText("Обучение модели...");
+    modelStatusLabel->setText("Обучение модели через Python...");
     modelStatusLabel->setStyleSheet("color: #ffc075; font-style: italic;");
 
-
-    for (int i = 0; i <= 100; i += 10) {
-        trainingProgress->setValue(i);
-        QApplication::processEvents();
-        QThread::msleep(50);
-    }
-
-
-    bool success = trainLinearRegression();
-
-    if (success) {
-        modelLoaded = true;
-        currentModelPath = "models/linear_regression.bin";
-        modelStatusLabel->setText(QString("Модель обучена (коэффициентов: %1)").arg(model.coefficients.size()));
-        modelStatusLabel->setStyleSheet("color: #28a745; font-style: normal;");
-
-        QMessageBox::information(this, "Успех",
-                                 "Модель множественной линейной регрессии успешно обучена на " +
-                                     QString::number(dates.size()) + " записях.");
-    } else {
-        modelStatusLabel->setText("Ошибка обучения");
-        modelStatusLabel->setStyleSheet("color: #dc3545; font-style: italic;");
-
-        QMessageBox::critical(this, "Ошибка", "Не удалось обучить модель.");
-    }
+    // Вызываем Python-обучение
+    trainModelPy();
 
     trainingProgress->setVisible(false);
 }
+
+// void FishingForecastWindow::onTrainModelClicked()
+// {
+
+//     if (records.isEmpty()) {
+//         QMessageBox::warning(this, "Предупреждение",
+//                              "Нет данных для обучения модели. Сначала добавьте записи о рыбалке.");
+//         return;
+//     }
+
+
+//     trainingProgress->setVisible(true);
+//     trainingProgress->setValue(0);
+//     modelStatusLabel->setText("Обучение модели...");
+//     modelStatusLabel->setStyleSheet("color: #ffc075; font-style: italic;");
+
+
+//     for (int i = 0; i <= 100; i += 10) {
+//         trainingProgress->setValue(i);
+//         QApplication::processEvents();
+//         QThread::msleep(50);
+//     }
+
+
+//     bool success = trainLinearRegression();
+
+//     if (success) {
+//         modelLoaded = true;
+//         currentModelPath = "models/linear_regression.bin";
+//         modelStatusLabel->setText(QString("Модель обучена (коэффициентов: %1)").arg(model.coefficients.size()));
+//         modelStatusLabel->setStyleSheet("color: #28a745; font-style: normal;");
+
+//         QMessageBox::information(this, "Успех",
+//                                  "Модель множественной линейной регрессии успешно обучена на " +
+//                                      QString::number(dates.size()) + " записях.");
+//     } else {
+//         modelStatusLabel->setText("Ошибка обучения");
+//         modelStatusLabel->setStyleSheet("color: #dc3545; font-style: italic;");
+
+//         QMessageBox::critical(this, "Ошибка", "Не удалось обучить модель.");
+//     }
+
+//     trainingProgress->setVisible(false);
+// }
 
 void FishingForecastWindow::onLoadModelClicked()
 {
@@ -407,7 +528,8 @@ void FishingForecastWindow::onLoadModelClicked()
             QThread::msleep(50);
         }
 
-
+        // Здесь загружай настоящие коэффициенты из файла
+        // А пока оставь так для теста
         model.coefficients.resize(9);
         for (int i = 0; i < 9; ++i) {
             model.coefficients[i] = 0.1;
@@ -433,14 +555,11 @@ void FishingForecastWindow::onMakePredictionClicked()
         return;
     }
 
-
     QVector<double> features = prepareFeaturesFromInput();
-
-
     double probability = predictWithModel(features);
 
-    double maxCatch = 10.0; // Максимальный ожидаемый вес в кг
-    double expectedWeight = probability * maxCatch;
+    // Используем maxWeight из модели, а не фиксированное 10.0
+    double expectedWeight = probability * model.maxWeight;
 
     updatePredictionResult(probability, expectedWeight);
 }
@@ -486,3 +605,52 @@ void FishingForecastWindow::updatePredictionResult(double probability, double ex
     recommendationLabel->setText("Рекомендации: " + recommendation);
 }
 
+
+void FishingForecastWindow::onWeatherLoaded()
+{
+    // Заполняем поля
+    airTempSpinBox->setValue(weather->temperature);
+    waterTempSpinBox->setValue(weather->temperature * 0.8);
+    pressureSpinBox->setValue(weather->pressure * 0.750062);
+    windSpeedSpinBox->setValue(weather->windSpeed);
+
+    // Направление ветра
+    QString windDir;
+    if (weather->windDeg >= 337.5 || weather->windDeg < 22.5) windDir = "Северный";
+    else if (weather->windDeg >= 22.5 && weather->windDeg < 67.5) windDir = "Северо-восточный";
+    else if (weather->windDeg >= 67.5 && weather->windDeg < 112.5) windDir = "Восточный";
+    else if (weather->windDeg >= 112.5 && weather->windDeg < 157.5) windDir = "Юго-восточный";
+    else if (weather->windDeg >= 157.5 && weather->windDeg < 202.5) windDir = "Южный";
+    else if (weather->windDeg >= 202.5 && weather->windDeg < 247.5) windDir = "Юго-западный";
+    else if (weather->windDeg >= 247.5 && weather->windDeg < 292.5) windDir = "Западный";
+    else windDir = "Северо-западный";
+
+    int index = windDirectionCombo->findText(windDir);
+    if (index >= 0) windDirectionCombo->setCurrentIndex(index);
+
+    // Время дня
+    QTime now = QTime::currentTime();
+    timeOfDayCombo->setCurrentText(now.hour() >= 6 && now.hour() < 18 ? "День" : "Ночь");
+
+    // Сезон
+    int month = QDate::currentDate().month();
+    QString seasonStr;
+    if (month == 12 || month == 1 || month == 2) seasonStr = "Зима";
+    else if (month >= 3 && month <= 5) seasonStr = "Весна";
+    else if (month >= 6 && month <= 8) seasonStr = "Лето";
+    else seasonStr = "Осень";
+
+    int seasonIndex = seasonCombo->findText(seasonStr);
+    if (seasonIndex >= 0) seasonCombo->setCurrentIndex(seasonIndex);
+
+
+
+    QMessageBox::information(this, "Успех",
+                             QString("Погода для города %1 загружена!").arg(weather->cityName));
+}
+
+void FishingForecastWindow::onWeatherError(const QString &error)
+{
+    QMessageBox::warning(this, "Ошибка",
+                         "Не удалось загрузить погоду:\n" + error);
+}
