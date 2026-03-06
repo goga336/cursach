@@ -93,14 +93,11 @@ void settings::changeSattings(){
     QString name = nameInput->text();
     DayTableWindow dayTableWindow;
     dayTableWindow.insertSettings(name);
-    //emit userNameChanged(name);
 
-    // Вывод пути к выбранной фотографии для теста
     if (!selectedPhotoPath.isEmpty()) {
-        QImage userPhoto(selectedPhotoPath); // Загружаем фото по выбранному пути
-        if (!userPhoto.isNull()) {          // Проверяем, корректно ли загружено фото
-            dayTableWindow.insertSettingsPhoto(userPhoto); // Используем ID пользователя
-            qDebug() << "Выбранная фотография сохранена в БД:" << selectedPhotoPath;
+        QImage userPhoto(selectedPhotoPath);
+        if (!userPhoto.isNull()) {
+            dayTableWindow.insertSettingsPhoto(userPhoto);
         } else {
             qDebug() << "Ошибка: не удалось загрузить фотографию.";
             QMessageBox::warning(this, "Ошибка", "Не удалось загрузить выбранное фото.");

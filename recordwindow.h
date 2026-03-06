@@ -16,7 +16,7 @@
 #include <QComboBox>
 #include <QCheckBox>
 #include <QTextEdit>
-
+#include "daytablewindow.h"
 #include "weatherservice.h"
 class RecordWindow : public QMainWindow, public IWindow
 {
@@ -47,6 +47,7 @@ private:
     QComboBox *moonPhase;
     QCheckBox *recentActivity;
     QTextEdit *note;
+    DayTableWindow *dbManager;
     void setupUI();
 
     WeatherService *weather;

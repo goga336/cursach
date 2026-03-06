@@ -354,83 +354,6 @@ QVector<double> FishingForecastWindow::prepareFeaturesFromInput()
     return features;
 }
 
-bool FishingForecastWindow::trainLinearRegression()
-{
-    if (records.isEmpty()) {
-        return false;
-    }
-
-    int n_samples = records.size();
-    int n_features = 9; // Количество признаков
-
-
-    QVector<QVector<double>> X(n_samples);
-    QVector<double> y(n_samples);
-
-    for (int i = 0; i < n_samples; ++i) {
-        const auto& record = records[i];
-        QVector<double> features;
-        features.append(normalize(record.airTemperature, -50, 50));
-        features.append(normalize(record.pressure, 700, 800));
-        features.append(normalize(record.waterTemperature, 0, 30));
-        features.append(normalize(record.windSpeed, 0, 50));
-        features.append(record.windDirection / 7.0);
-        features.append(record.timeOfDay / 3.0);
-        features.append(record.season / 3.0);
-        features.append(record.moonPhase / 3.0);
-        features.append(record.recentActivity ? 1.0 : 0.0);
-
-        X[i] = features;
-        y[i] = record.catchWeight / 10.0;  // вес улова
-    }
-
-    // Решаем нормальное уравнение: β = (X^T X)^(-1) X^T y
-    // Это упрощенная реализация для демонстрации
-
-    // Вычисляем средние значения признаков
-    QVector<double> meanX(n_features, 0.0);
-    double meanY = 0.0;
-
-    for (int i = 0; i < n_samples; ++i) {
-        for (int j = 0; j < n_features; ++j) {
-            meanX[j] += X[i][j];
-        }
-        meanY += y[i];
-    }
-
-    for (int j = 0; j < n_features; ++j) {
-        meanX[j] /= n_samples;
-    }
-    meanY /= n_samples;
-
-    model.coefficients.resize(n_features);
-
-    for (int j = 0; j < n_features; ++j) {
-        double numerator = 0.0;
-        double denominator = 0.0;
-
-        for (int i = 0; i < n_samples; ++i) {
-            numerator += (X[i][j] - meanX[j]) * (y[i] - meanY);
-            denominator += (X[i][j] - meanX[j]) * (X[i][j] - meanX[j]);
-        }
-
-        if (denominator != 0) {
-            model.coefficients[j] = numerator / denominator;
-        } else {
-            model.coefficients[j] = 0.0;
-        }
-    }
-
-
-    model.intercept = meanY;
-    for (int j = 0; j < n_features; ++j) {
-        model.intercept -= model.coefficients[j] * meanX[j];
-    }
-
-    model.isValid = true;
-    return true;
-}
-
 
 double FishingForecastWindow::predictWithModel(const QVector<double> &features)
 {
@@ -466,49 +389,7 @@ void FishingForecastWindow::onTrainModelClicked()
     trainingProgress->setVisible(false);
 }
 
-// void FishingForecastWindow::onTrainModelClicked()
-// {
 
-//     if (records.isEmpty()) {
-//         QMessageBox::warning(this, "Предупреждение",
-//                              "Нет данных для обучения модели. Сначала добавьте записи о рыбалке.");
-//         return;
-//     }
-
-
-//     trainingProgress->setVisible(true);
-//     trainingProgress->setValue(0);
-//     modelStatusLabel->setText("Обучение модели...");
-//     modelStatusLabel->setStyleSheet("color: #ffc075; font-style: italic;");
-
-
-//     for (int i = 0; i <= 100; i += 10) {
-//         trainingProgress->setValue(i);
-//         QApplication::processEvents();
-//         QThread::msleep(50);
-//     }
-
-
-//     bool success = trainLinearRegression();
-
-//     if (success) {
-//         modelLoaded = true;
-//         currentModelPath = "models/linear_regression.bin";
-//         modelStatusLabel->setText(QString("Модель обучена (коэффициентов: %1)").arg(model.coefficients.size()));
-//         modelStatusLabel->setStyleSheet("color: #28a745; font-style: normal;");
-
-//         QMessageBox::information(this, "Успех",
-//                                  "Модель множественной линейной регрессии успешно обучена на " +
-//                                      QString::number(dates.size()) + " записях.");
-//     } else {
-//         modelStatusLabel->setText("Ошибка обучения");
-//         modelStatusLabel->setStyleSheet("color: #dc3545; font-style: italic;");
-
-//         QMessageBox::critical(this, "Ошибка", "Не удалось обучить модель.");
-//     }
-
-//     trainingProgress->setVisible(false);
-// }
 
 void FishingForecastWindow::onLoadModelClicked()
 {

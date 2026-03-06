@@ -31,12 +31,14 @@ void MainWindow::setupUI() {
 }
 
 void MainWindow::createScrollArea(){
+    //QGroupBox *inputGroup = new QGroupBox("Введите текущие погодные условия", this);
     QPalette palette;
     QPixmap background("/home/goga/Desktop/study/8_semestr/diplom/phone.png");
     palette.setBrush(QPalette::Window, background.scaled(this->size(), Qt::IgnoreAspectRatio, Qt::SmoothTransformation));
     this->setPalette(palette);
 
-    QVBoxLayout *lauoutmain = new QVBoxLayout;
+    QVBoxLayout *lauoutmain = new QVBoxLayout();
+
 
     QString UserName;
     daytable->getFromDatabase(UserName);
@@ -130,6 +132,8 @@ void MainWindow::createScrollArea(){
     lauoutmain->addWidget(pressureLabel );
     lauoutmain->addWidget(waterTemperatureLabel);
     lauoutmain->addWidget(avgWeightLabel);
+
+
 
 
     QWidget *mainwidget = new QWidget(this);

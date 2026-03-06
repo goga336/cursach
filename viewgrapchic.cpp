@@ -15,6 +15,7 @@ ViewGrapchic::ViewGrapchic(QWidget *parent)
     : QMainWindow{parent}
 {
     setupUI();
+    dbManager = new DayTableWindow();
 }
 ViewGrapchic::~ViewGrapchic()
 {
@@ -30,11 +31,13 @@ void ViewGrapchic::initialize()
 {
     setupUI();
 }
-
 void ViewGrapchic::setupUI()
-{    comboBoxYear = new QComboBox(this);
-    comboBoxYear->addItem("Все года");  // Опция для отображения всех данных
+{
+    comboBoxYear = new QComboBox(this);
+    comboBoxYear->addItem("Все года");
     resize(900, 900);
+
+    // Получаем года через dbManager
     QSqlQuery yearQuery("SELECT DISTINCT EXTRACT(YEAR FROM fishing_date) AS year FROM fishing_day ORDER BY year");
     while (yearQuery.next()) {
         comboBoxYear->addItem(yearQuery.value(0).toString());
@@ -52,37 +55,17 @@ void ViewGrapchic::setupUI()
     // Изначально показываем все данные
     QVector<QDate> dates;
     QVector<float> weights;
-    getFromDatabasetoGraphic(dates, weights, "");
-    buildgraph(dates, weights);}
+    dbManager->getFishingDataForGraphic(dates, weights, "");  // Используем dbManager
+    buildgraph(dates, weights);
+}
 
 void ViewGrapchic::onYearChanged(const QString &year) {
     QVector<QDate> dates;
     QVector<float> weights;
-    getFromDatabasetoGraphic(dates, weights, year);
+    dbManager->getFishingDataForGraphic(dates, weights, year);  // Используем dbManager
     buildgraph(dates, weights);
 }
 
-void ViewGrapchic::getFromDatabasetoGraphic(QVector<QDate>& vecDate, QVector<float>& vecWeight, const QString &year) {
-    QSqlQuery query;
-
-    QString queryString = "SELECT fishing_date, catch_weight FROM fishing_day";
-    if (!year.isEmpty() && year != "Все года") {
-        queryString += " WHERE EXTRACT(YEAR FROM fishing_date) = " + year;
-    }
-
-    if (query.exec(queryString)) {
-        while (query.next()) {
-            QDate date = query.value(0).toDate();
-            float weight = query.value(1).toFloat();
-            vecDate.append(date);
-            vecWeight.append(weight);
-        }
-    } else {
-        qDebug() << "Query execution error:" << query.lastError().text();
-    }
-
-    std::sort(vecDate.begin(), vecDate.end());
-}
 
 void ViewGrapchic::buildgraph(const QVector<QDate>& vecDate, const QVector<float>& vecWeight) {
     QLineSeries *series = new QLineSeries();

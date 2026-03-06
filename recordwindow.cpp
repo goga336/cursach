@@ -7,7 +7,8 @@
 RecordWindow::RecordWindow(QWidget *parent)
     : QMainWindow(parent)
 {
-    weather = new WeatherService(this);  // Создаем объект сервиса погоды
+    weather = new WeatherService(this);
+    dbManager = new DayTableWindow(this);
 
     // Подключаем сигналы
     connect(weather, &WeatherService::weatherLoaded,
@@ -218,25 +219,9 @@ void RecordWindow::setupUI()
 
     centralWidget->setLayout(mainBox);
     setCentralWidget(centralWidget);
-
-
-    QSqlDatabase db = QSqlDatabase::addDatabase("QPSQL");
-    db.setDatabaseName("fishing_db");
-    db.setHostName("localhost");
-    db.setPort(5432);
-    db.setUserName("postgres");
-    db.setPassword("3360146");
-
-    if (!db.open())
-    {
-        QMessageBox::information(nullptr, "Ошибка", "Не удалось подключиться к базе данных!");
-    }
-    else
-    {
-      //  QMessageBox::information(nullptr, "Успех", "Подключение успешно!");
-    }
    connect(send, &QPushButton::clicked, this, &RecordWindow::recordFishingDay);
 }
+
 
 void RecordWindow::recordFishingDay()
 {
@@ -247,7 +232,6 @@ void RecordWindow::recordFishingDay()
     double airTemperature = tempAir->value();
     double waterTemperature = tempWater->value();
     double pressure = pressureInput->value();
-
     double windSpeedValue = windSpeed->value();
     QString windDirectionValue = windDirection->currentText();
     QString timeOfDayValue = timeOfDay->currentText();
@@ -256,67 +240,57 @@ void RecordWindow::recordFishingDay()
     bool recentActivityValue = recentActivity->isChecked();
     QString notesValue = note->toPlainText();
 
-    // Проверка, что время начала меньше времени окончания
+    // Проверка времени
     if (startTime >= endTime) {
-        QMessageBox::warning(this, "Ошибка", "Время начала рыбалки не может быть больше или равно времени окончания!");
-        return; // Прерываем выполнение, если условие не выполнено
-    }
-
-    QSqlQuery query;
-    query.prepare("INSERT INTO fishing_day (fisher_id, catch_weight, fishing_date, start_time, end_time, notes) VALUES (:user_id, :weight, :date, :start_time, :end_time, :notes)");
-    query.bindValue(":date", date);
-    query.bindValue(":start_time", startTime);
-    query.bindValue(":end_time", endTime);
-    query.bindValue(":user_id", 1);
-    query.bindValue(":weight", weight);
-    query.bindValue(":notes", notesValue);
-
-    if (!query.exec())
-    {
-        QMessageBox::information(nullptr, "Ошибка", "Не удалось записать данные о дне рыбалки: " + query.lastError().text());
+        QMessageBox::warning(this, "Ошибка",
+                             "Время начала рыбалки не может быть больше или равно времени окончания!");
         return;
     }
 
-    int fishingDayId = query.lastInsertId().toInt();
-
-    query.prepare("INSERT INTO weather_condition (fishing_day_id, air_temperature, atm_pressure, water_temperature, "
-                  "wind_speed, wind_direction, time_of_day, season, moon_phase, recent_activity) "
-                  "VALUES (:fishingday_id, :air_temperature, :pressure, :water_temperature, "
-                  ":wind_speed, :wind_direction, :time_of_day, :season, :moon_phase, :recent_activity)");
-
-    query.bindValue(":fishingday_id", fishingDayId);
-    query.bindValue(":air_temperature", airTemperature);
-    query.bindValue(":pressure", pressure);
-    query.bindValue(":water_temperature", waterTemperature);
-    query.bindValue(":wind_speed", windSpeedValue);
-    query.bindValue(":wind_direction", windDirectionValue);
-    query.bindValue(":time_of_day", timeOfDayValue);
-    query.bindValue(":season", seasonValue);
-    query.bindValue(":moon_phase", moonPhaseValue);
-    query.bindValue(":recent_activity", recentActivityValue);
-
-    if (!query.exec())
-    {
-        QMessageBox::warning(nullptr, "Ошибка", "Не удалось записать данные о погоде: " + query.lastError().text());
+    // Сначала добавляем запись о рыбалке
+    if (!dbManager->addFishingRecord(date, startTime, endTime, weight, notesValue)) {
+        return;  // Ошибка уже показана в методе
     }
-    else
-    {
-        QMessageBox::information(nullptr, "Успех", "Данные успешно записаны!");
-        fishWeight->setValue(0);
-        fishDate->setDate(QDate::currentDate());
-        startFishing->setTime(QTime::fromString("00:00", "hh:mm"));
-        endFishing->setTime(QTime::fromString("00:00", "hh:mm"));
-        tempAir->setValue(20.0);
-        tempWater->setValue(20.0);
-        pressureInput->setValue(760.0);
-        windSpeed->setValue(0.0);
-        windDirection->setCurrentIndex(0);
-        timeOfDay->setCurrentIndex(0);
-        season->setCurrentIndex(0);
-        moonPhase->setCurrentIndex(0);
-        recentActivity->setChecked(false);
-        note->clear();
+
+    // Получаем ID последней записи
+    QSqlQuery query;
+    query.exec("SELECT LASTVAL()");
+    int fishingDayId = -1;
+    if (query.next()) {
+        fishingDayId = query.value(0).toInt();
     }
+
+    if (fishingDayId == -1) {
+        QMessageBox::warning(this, "Ошибка", "Не удалось получить ID записи");
+        return;
+    }
+
+    // Добавляем погодные условия
+    if (!dbManager->addWeatherConditions(fishingDayId, airTemperature, waterTemperature,
+                                         pressure, windSpeedValue, windDirectionValue,
+                                         timeOfDayValue, seasonValue, moonPhaseValue,
+                                         recentActivityValue)) {
+        return;  // Ошибка уже показана в методе
+    }
+
+    // Если всё успешно
+    QMessageBox::information(this, "Успех", "Данные успешно записаны!");
+
+    // Очищаем поля
+    fishWeight->setValue(0);
+    fishDate->setDate(QDate::currentDate());
+    startFishing->setTime(QTime::fromString("00:00", "hh:mm"));
+    endFishing->setTime(QTime::fromString("00:00", "hh:mm"));
+    tempAir->setValue(20.0);
+    tempWater->setValue(20.0);
+    pressureInput->setValue(760.0);
+    windSpeed->setValue(0.0);
+    windDirection->setCurrentIndex(0);
+    timeOfDay->setCurrentIndex(0);
+    season->setCurrentIndex(0);
+    moonPhase->setCurrentIndex(0);
+    recentActivity->setChecked(false);
+    note->clear();
 }
 
 void RecordWindow::onWeatherLoaded()
@@ -356,20 +330,7 @@ void RecordWindow::onWeatherLoaded()
     int seasonIndex = season->findText(seasonStr);
     if (seasonIndex >= 0) season->setCurrentIndex(seasonIndex);
 
-    // Заметка
-    QString weatherNote = QString("🌤 Погода из %1\n"
-                                  "Температура: %2°C\n"
-                                  "Давление: %3 мм рт.ст.\n"
-                                  "Ветер: %4 м/с, %5\n"
-                                  "Описание: %6")
-                              .arg(weather->cityName)
-                              .arg(weather->temperature, 0, 'f', 1)
-                              .arg(weather->pressure * 0.750062, 0, 'f', 0)
-                              .arg(weather->windSpeed, 0, 'f', 1)
-                              .arg(windDir)
-                              .arg(weather->description);
 
-    note->setPlainText(weatherNote);
 
     QMessageBox::information(this, "Успех",
                              QString("Погода для города %1 загружена!").arg(weather->cityName));

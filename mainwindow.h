@@ -13,7 +13,7 @@
 #include <QVector>
 #include <QDate>
 #include <QTimer>
-
+#include <QFrame>
 
 
 class MainWindow : public QMainWindow, public IWindow
@@ -40,6 +40,7 @@ private:
     QLabel *temperatureLabel;
     QLabel *pressureLabel;
     QLabel *waterTemperatureLabel;
+
 
 
 

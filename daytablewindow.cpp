@@ -58,8 +58,6 @@ void DayTableWindow::insertIntoDatabase(const QDate &date, const QTime &start_ti
     // query.exec();
     if (!query.exec()) {
         QMessageBox::information(nullptr, "Ошибка подключения", "ошибка!", query.lastError().text());
-    } else {
-       // QMessageBox::information(nullptr, "Успех", "Подключение успешно!");
     }
 }
 
@@ -78,14 +76,13 @@ void DayTableWindow::insertSettingsPhoto(QImage &userPhoto){
     QByteArray byteArray;
     QBuffer buffer(&byteArray);
     buffer.open(QIODevice::WriteOnly);
-    userPhoto.save(&buffer, "PNG"); // Сохраняем изображение в формате PNG
+    userPhoto.save(&buffer, "PNG");
 
-    // Подготовка SQL-запроса
     QSqlQuery query;
     query.prepare("UPDATE fisher SET fisher_photo = :userPhoto WHERE fisher_id = 1");
-    query.bindValue(":userPhoto", byteArray); // Привязываем данные как bytea     // Привязываем ID пользователя
+    query.bindValue(":userPhoto", byteArray);
 
-    // Выполнение запроса
+
     if (!query.exec()) {
         QMessageBox::critical(nullptr, "Ошибка подключения",
                               "Ошибка сохранения данных:\n" + query.lastError().text());
@@ -108,26 +105,35 @@ void DayTableWindow::getFromDatabase(QString &name){
     }
 }
 
-void DayTableWindow::getFromDatabasetoGraphic(QVector<QDate> &vecDate, QVector<float> &vecWeight){
+
+void DayTableWindow::getFishingDataForGraphic(QVector<QDate> &vecDate, QVector<float> &vecWeight, const QString &year)
+{
     QSqlQuery query;
-    query.exec("select fishing_date, catch_weight from fishing_day");
-    float weight;
-    QDate date;
-    while (query.next()){
-        date = query.value(0).toDate();
-        weight = query.value(1).toFloat();
-        vecDate.append(date);
-        vecWeight.append(weight);
+
+    QString queryString = "SELECT fishing_date, catch_weight FROM fishing_day";
+    if (!year.isEmpty() && year != "Все года") {
+        queryString += " WHERE EXTRACT(YEAR FROM fishing_date) = " + year;
     }
+
+    if (query.exec(queryString)) {
+        while (query.next()) {
+            QDate date = query.value(0).toDate();
+            float weight = query.value(1).toFloat();
+            vecDate.append(date);
+            vecWeight.append(weight);
+        }
+    } else {
+        qDebug() << "Query execution error:" << query.lastError().text();
+    }
+
+    std::sort(vecDate.begin(), vecDate.end());
 }
 
 QVector<FishingRecord> DayTableWindow::getAllDataForPrediction(){
     QVector<FishingRecord> records;
     QSqlQuery query;
 
-    qDebug() << "Начинаем загрузку данных для прогноза...";
 
-    // Исправленный запрос с JOIN
     query.exec("SELECT fd.fishing_date, wc.water_temperature, wc.air_temperature, "
                "wc.wind_speed, wc.atm_pressure, wc.wind_direction, wc.time_of_day, "
                "wc.season, wc.moon_phase, wc.recent_activity, fd.catch_weight "
@@ -144,7 +150,6 @@ QVector<FishingRecord> DayTableWindow::getAllDataForPrediction(){
         count++;
         FishingRecord record;
 
-        // fishing_date - это QDate, конвертируем в QDateTime
         QString dateStr = query.value("fishing_date").toString();
         record.date = QDateTime::fromString(dateStr, Qt::ISODate);
         record.waterTemperature = query.value("water_temperature").toDouble();
@@ -152,7 +157,6 @@ QVector<FishingRecord> DayTableWindow::getAllDataForPrediction(){
         record.windSpeed = query.value("wind_speed").toDouble();
         record.pressure = query.value("atm_pressure").toDouble();
 
-        // Преобразование строк в индексы
         QString windDir = query.value("wind_direction").toString();
         if (windDir == "Северный") record.windDirection = 0;
         else if (windDir == "Северо-восточный") record.windDirection = 1;
@@ -189,7 +193,6 @@ QVector<FishingRecord> DayTableWindow::getAllDataForPrediction(){
 
     qDebug() << "Загружено записей:" << count;
 
-    // Проверка первой записи для отладки
     if (!records.isEmpty()) {
         const auto& first = records.first();
         qDebug() << "Первая запись - дата:" << first.date.toString("yyyy-MM-dd")
@@ -247,15 +250,14 @@ void DayTableWindow::getAverageWeatherConditionsForSuccessfulFishing(float &avgT
 }
 
 void DayTableWindow::loadFisherPhoto(QLabel *fishermanImage, int userId) {
-    // SQL-запрос для получения фотографии
     QSqlQuery query;
     query.prepare("SELECT fisher_photo FROM fisher WHERE fisher_id = :userId");
     query.bindValue(":userId", userId);
 
     if (query.exec() && query.next()) {
-        QByteArray byteArray = query.value(0).toByteArray(); // Извлечение данных из BLOB/bytea
+        QByteArray byteArray = query.value(0).toByteArray();
         QPixmap pixmap;
-        if (pixmap.loadFromData(byteArray)) { // Загрузка QPixmap из данных
+        if (pixmap.loadFromData(byteArray)) {
             fishermanImage->setPixmap(pixmap.scaled(500, 500, Qt::KeepAspectRatio, Qt::SmoothTransformation));
             fishermanImage->setAlignment(Qt::AlignCenter);
         } else {
@@ -264,4 +266,57 @@ void DayTableWindow::loadFisherPhoto(QLabel *fishermanImage, int userId) {
     } else {
         QMessageBox::warning(this, "Ошибка", "Фотография не найдена:\n" + query.lastError().text());
     }
+}
+
+bool DayTableWindow::addFishingRecord(const QDate &date, const QTime &startTime,
+                                      const QTime &endTime, double weight,
+                                      const QString &notes)
+{
+    QSqlQuery query;
+    query.prepare("INSERT INTO fishing_day (fisher_id, catch_weight, fishing_date, start_time, end_time, notes) "
+                  "VALUES (:user_id, :weight, :date, :start_time, :end_time, :notes)");
+    query.bindValue(":date", date);
+    query.bindValue(":start_time", startTime);
+    query.bindValue(":end_time", endTime);
+    query.bindValue(":user_id", 1);
+    query.bindValue(":weight", weight);
+    query.bindValue(":notes", notes);
+
+    if (!query.exec()) {
+        QMessageBox::warning(nullptr, "Ошибка",
+                             "Не удалось записать данные о дне рыбалки: " + query.lastError().text());
+        return false;
+    }
+    return true;
+}
+
+bool DayTableWindow::addWeatherConditions(int fishingDayId, double airTemperature,
+                                          double waterTemperature, double pressure,
+                                          double windSpeed, const QString &windDirection,
+                                          const QString &timeOfDay, const QString &season,
+                                          const QString &moonPhase, bool recentActivity)
+{
+    QSqlQuery query;
+    query.prepare("INSERT INTO weather_condition (fishing_day_id, air_temperature, atm_pressure, water_temperature, "
+                  "wind_speed, wind_direction, time_of_day, season, moon_phase, recent_activity) "
+                  "VALUES (:fishingday_id, :air_temperature, :pressure, :water_temperature, "
+                  ":wind_speed, :wind_direction, :time_of_day, :season, :moon_phase, :recent_activity)");
+
+    query.bindValue(":fishingday_id", fishingDayId);
+    query.bindValue(":air_temperature", airTemperature);
+    query.bindValue(":pressure", pressure);
+    query.bindValue(":water_temperature", waterTemperature);
+    query.bindValue(":wind_speed", windSpeed);
+    query.bindValue(":wind_direction", windDirection);
+    query.bindValue(":time_of_day", timeOfDay);
+    query.bindValue(":season", season);
+    query.bindValue(":moon_phase", moonPhase);
+    query.bindValue(":recent_activity", recentActivity);
+
+    if (!query.exec()) {
+        QMessageBox::warning(nullptr, "Ошибка",
+                             "Не удалось записать данные о погоде: " + query.lastError().text());
+        return false;
+    }
+    return true;
 }

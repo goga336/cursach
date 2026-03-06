@@ -7,6 +7,7 @@
 #include <QString>
 #include <QChartView>
 #include "iwindow.h"
+#include "daytablewindow.h"
 
 namespace QtCharts {
 class QChartView;
@@ -35,6 +36,7 @@ private:
 
     QComboBox *comboBoxYear;                // Комбо-бокс для выбора года
     QChartView *chartView = nullptr;  // Виджет для отображения графика
+    DayTableWindow *dbManager;
 };
 
 #endif // VIEWGRAPCHIC_H
