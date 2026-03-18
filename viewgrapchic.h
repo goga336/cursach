@@ -2,41 +2,47 @@
 #define VIEWGRAPCHIC_H
 
 #include <QMainWindow>
-#include <QVector>
-#include <QDate>
-#include <QString>
 #include <QChartView>
+#include <QLineSeries>
+#include <QDateTimeAxis>
+#include <QValueAxis>
 #include "iwindow.h"
-#include "daytablewindow.h"
-
-namespace QtCharts {
-class QChartView;
-}
 
 class QComboBox;
+class QLabel;
+class QWidget;
+class DayTableWindow;
 
 class ViewGrapchic : public QMainWindow, public IWindow
 {
     Q_OBJECT
-
 public:
     explicit ViewGrapchic(QWidget *parent = nullptr);
     ~ViewGrapchic();
-    void initialize() override;
-    void showWindow() override;
-    void setupUI();
 
+    void showWindow();
+    void initialize();
 
 private slots:
-    void onYearChanged(const QString &year);
+    void onMainComboBoxChanged(const QString &text);
+    void onOverlayYearChanged();
 
 private:
-    void getFromDatabasetoGraphic(QVector<QDate>& vecDate, QVector<float>& vecWeight, const QString &year);
-    void buildgraph(const QVector<QDate>& vecDate, const QVector<float>& vecWeight);
+    void setupUI();
+    void loadYearsToComboBox(QComboBox *comboBox);
+    void buildSingleYearGraph(const QString &year);
+    void buildAllYearsGraph();
+    void buildOverlayGraph(const QString &year1, const QString &year2);
+    void clearChart();
 
-    QComboBox *comboBoxYear;                // Комбо-бокс для выбора года
-    QChartView *chartView = nullptr;  // Виджет для отображения графика
     DayTableWindow *dbManager;
+    QChartView *chartView;
+
+
+    QComboBox *mainComboBox;
+    QComboBox *overlayYear1;
+    QComboBox *overlayYear2;
+    QWidget *overlayPanel;
 };
 
 #endif // VIEWGRAPCHIC_H

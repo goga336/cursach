@@ -27,8 +27,8 @@ DayTableWindow::~DayTableWindow()
 void DayTableWindow::connectToDatabase(){
     QSqlDatabase db = QSqlDatabase::addDatabase("QPSQL");
     db.setDatabaseName("fishing_db");
-    db.setHostName("localhost"); // только имя хоста
-    db.setPort(5432); // указание порта
+    db.setHostName("localhost");
+    db.setPort(5432);
     db.setUserName("postgres");
     db.setPassword("3360146");
 

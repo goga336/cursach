@@ -30,9 +30,8 @@ FishingForecastWindow::FishingForecastWindow(QWidget *parent)
     , modelLoaded(false)
 {
     model.isValid = false;
-    weather = new WeatherService(this);  // Создаем объект сервиса погоды
+    weather = new WeatherService(this);
 
-    // Подключаем сигналы
     connect(weather, &WeatherService::weatherLoaded,
             this, &FishingForecastWindow::onWeatherLoaded);
     connect(weather, &WeatherService::errorOccurred,
@@ -75,7 +74,6 @@ void FishingForecastWindow::setupUI()
 
     setCentralWidget(centralWidget);
 
-    // Устанавливаем стили для всего окна
     setStyleSheet("QGroupBox { font-size: 14px; font-weight: bold; margin-top: 10px; }"
                   "QGroupBox::title { subcontrol-origin: margin; left: 10px; padding: 0 5px 0 5px; }");
 }
@@ -212,7 +210,6 @@ void FishingForecastWindow::createResultGroup()
     resultGroup = new QGroupBox("Результат прогноза", this);
     QVBoxLayout *layout = new QVBoxLayout(resultGroup);
 
-    // Кнопка для получения прогноза
     predictButton = new QPushButton("Получить прогноз", this);
     predictButton->setStyleSheet("QPushButton { background-color: #007bff; color: white; padding: 10px; border-radius: 5px; font-size: 16px; }"
                                  "QPushButton:hover { background-color: #0056b3; }");
@@ -292,7 +289,7 @@ bool FishingForecastWindow::loadPythonModel(const QString& filename) {
         model.coefficients[i] = coefArray[i].toDouble();
 
     model.intercept = obj["intercept"].toDouble();
-    model.maxWeight = obj["max_weight"].toDouble(); // нужно добавить в структуру
+    model.maxWeight = obj["max_weight"].toDouble();
     model.isValid = true;
 
     return true;
@@ -409,8 +406,7 @@ void FishingForecastWindow::onLoadModelClicked()
             QThread::msleep(50);
         }
 
-        // Здесь загружай настоящие коэффициенты из файла
-        // А пока оставь так для теста
+
         model.coefficients.resize(9);
         for (int i = 0; i < 9; ++i) {
             model.coefficients[i] = 0.1;
@@ -535,3 +531,4 @@ void FishingForecastWindow::onWeatherError(const QString &error)
     QMessageBox::warning(this, "Ошибка",
                          "Не удалось загрузить погоду:\n" + error);
 }
+
