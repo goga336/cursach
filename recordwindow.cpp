@@ -40,9 +40,14 @@ void RecordWindow::setupUI()
     this->setCentralWidget(centralWidget);
 
     QPalette palette;
-    palette.setColor(QPalette::Window, QColor(0, 139, 139));  // Голубой цвет
-    centralWidget->setPalette(palette);
-    centralWidget->setAutoFillBackground(true);// Важно для применения фона
+    QLinearGradient gradient(0, 0, 0, height());
+    gradient.setColorAt(0.0, QColor(30, 90, 120));     // светло-синий сверху
+    gradient.setColorAt(0.5, QColor(70, 150, 170));    // мягкий бирюзовый
+    gradient.setColorAt(1.0, QColor(130, 200, 210));   // очень светлый снизу
+
+    palette.setBrush(QPalette::Window, QBrush(gradient));
+    this->setPalette(palette);
+    this->setAutoFillBackground(true);
 
     QHBoxLayout *mainBox = new QHBoxLayout(centralWidget);
     // Настраиваем макет
@@ -54,7 +59,7 @@ void RecordWindow::setupUI()
     QVBoxLayout *rightBox = new QVBoxLayout(rightPanel);
 
     QLabel *labelWeight = new QLabel("Вес рыбы (кг):");
-    labelWeight->setStyleSheet("color: white;");
+    labelWeight->setStyleSheet("color: black;");
     box->addWidget(labelWeight);
 
     fishWeight = new QDoubleSpinBox(centralWidget);
@@ -63,7 +68,7 @@ void RecordWindow::setupUI()
     box->addWidget(fishWeight);
 
     QLabel *labelDate = new QLabel("Дата рыбалки:");
-    labelDate->setStyleSheet("color: white;");
+    labelDate->setStyleSheet("color: black;");
     box->addWidget(labelDate);
 
     fishDate = new QDateEdit(centralWidget);
@@ -73,7 +78,7 @@ void RecordWindow::setupUI()
     box->addWidget(fishDate);
 
     QLabel *labelStartFishing = new QLabel("Время начала рыбалки:");
-    labelStartFishing->setStyleSheet("color: white;");
+    labelStartFishing->setStyleSheet("color: black;");
     box->addWidget(labelStartFishing);
 
     startFishing = new QTimeEdit(centralWidget);
@@ -81,7 +86,7 @@ void RecordWindow::setupUI()
     box->addWidget(startFishing);
 
     QLabel *labelEndFishing = new QLabel("Время окончания рыбалки:");
-    labelEndFishing->setStyleSheet("color: white;");
+    labelEndFishing->setStyleSheet("color: black;");
     box->addWidget(labelEndFishing);
 
     endFishing = new QTimeEdit(centralWidget);
@@ -89,7 +94,7 @@ void RecordWindow::setupUI()
     box->addWidget(endFishing);
 
     QLabel *tempAirl = new QLabel("Температура воздуха:");
-    tempAirl->setStyleSheet("color: white;");
+    tempAirl->setStyleSheet("color: black;");
     box->addWidget(tempAirl);
 
     tempAir = new QDoubleSpinBox(centralWidget);
@@ -99,7 +104,7 @@ void RecordWindow::setupUI()
     box->addWidget(tempAir);
 
     QLabel *tempWaterl = new QLabel("Температура воды:");
-    tempWaterl->setStyleSheet("color: white;");
+    tempWaterl->setStyleSheet("color: black;");
     box->addWidget(tempWaterl);
 
     tempWater = new QDoubleSpinBox(centralWidget);
@@ -109,7 +114,7 @@ void RecordWindow::setupUI()
     box->addWidget(tempWater);
 
     QLabel *labelPressureInput = new QLabel("Атмосферное давление (мм рт.ст.):");
-    labelPressureInput->setStyleSheet("color: white;");
+    labelPressureInput->setStyleSheet("color: black;");
     box->addWidget(labelPressureInput);
 
 
@@ -120,7 +125,7 @@ void RecordWindow::setupUI()
     box->addWidget(pressureInput);
 
     QLabel *windSpeedl = new QLabel("Скорость воздуха:");
-    windSpeedl->setStyleSheet("color: white;");
+    windSpeedl->setStyleSheet("color: black;");
     box->addWidget(windSpeedl);
 
     windSpeed = new QDoubleSpinBox(centralWidget);
@@ -130,7 +135,7 @@ void RecordWindow::setupUI()
     box->addWidget(windSpeed);
 
     QLabel *timeOfDayl = new QLabel("Время дня:");
-    timeOfDayl->setStyleSheet("color: white;");
+    timeOfDayl->setStyleSheet("color: black;");
     box->addWidget(timeOfDayl);
 
     timeOfDay = new QComboBox(centralWidget);
@@ -138,7 +143,7 @@ void RecordWindow::setupUI()
     box->addWidget(timeOfDay);
 
     QLabel *windDirectionl = new QLabel("Направление ветра:");
-    windDirectionl->setStyleSheet("color: white;");
+    windDirectionl->setStyleSheet("color: black;");
     box->addWidget(windDirectionl);
 
     windDirection = new QComboBox(centralWidget);
@@ -148,7 +153,7 @@ void RecordWindow::setupUI()
     box->addWidget(windDirection);
 
     QLabel *seasonl = new QLabel("Сезон:");
-    seasonl->setStyleSheet("color: white;");
+    seasonl->setStyleSheet("color: black;");
     box->addWidget(seasonl);
 
     season = new QComboBox(centralWidget);
@@ -156,7 +161,7 @@ void RecordWindow::setupUI()
     box->addWidget(season);
 
     QLabel *moonPhasel = new QLabel("Фаза луны:");
-    moonPhasel->setStyleSheet("color: white;");
+    moonPhasel->setStyleSheet("color: black;");
     box->addWidget(moonPhasel);
 
     moonPhase = new QComboBox(centralWidget);
@@ -164,14 +169,14 @@ void RecordWindow::setupUI()
     box->addWidget(moonPhase);
 
     QLabel *recentActivityl = new QLabel("Активность прессинг:");
-    recentActivityl->setStyleSheet("color: white;");
+    recentActivityl->setStyleSheet("color: black;");
     box->addWidget(recentActivityl);
 
     recentActivity = new QCheckBox(centralWidget);
     box->addWidget(recentActivity);
 
     QLabel *notel = new QLabel("Поле для заметок:");
-    notel->setStyleSheet("color: white;");
+    notel->setStyleSheet("color: black;");
     box->addWidget(notel);
 
     note = new QTextEdit();
@@ -247,9 +252,16 @@ void RecordWindow::recordFishingDay()
         return;
     }
 
+    if (notesValue.length() > 500) {
+        QMessageBox::warning(this, "Ошибка",
+                             QString("Заметка не может быть длиннее 500 символов! (сейчас %1 символов)")
+                                 .arg(notesValue.length()));
+        return;
+    }
+
     // Сначала добавляем запись о рыбалке
     if (!dbManager->addFishingRecord(date, startTime, endTime, weight, notesValue)) {
-        return;  // Ошибка уже показана в методе
+        return;
     }
 
     // Получаем ID последней записи

@@ -114,6 +114,7 @@ void DayTableWindow::getFishingDataForGraphic(QVector<QDate> &vecDate, QVector<f
     if (!year.isEmpty() && year != "Все года") {
         queryString += " WHERE EXTRACT(YEAR FROM fishing_date) = " + year;
     }
+    queryString += " ORDER BY fishing_date";
 
     if (query.exec(queryString)) {
         while (query.next()) {
@@ -126,7 +127,7 @@ void DayTableWindow::getFishingDataForGraphic(QVector<QDate> &vecDate, QVector<f
         qDebug() << "Query execution error:" << query.lastError().text();
     }
 
-    std::sort(vecDate.begin(), vecDate.end());
+    //std::sort(vecDate.begin(), vecDate.end());
 }
 
 QVector<FishingRecord> DayTableWindow::getAllDataForPrediction(){
@@ -168,10 +169,11 @@ QVector<FishingRecord> DayTableWindow::getAllDataForPrediction(){
         else if (windDir == "Северо-западный") record.windDirection = 7;
 
         QString timeDay = query.value("time_of_day").toString();
-        if (timeDay == "Утро") record.timeOfDay = 0;
-        else if (timeDay == "День") record.timeOfDay = 1;
-        else if (timeDay == "Вечер") record.timeOfDay = 2;
-        else if (timeDay == "Ночь") record.timeOfDay = 3;
+        if (timeDay == "Утро" || timeDay == "День") {
+            record.timeOfDay = 0;
+        } else if (timeDay == "Вечер" || timeDay == "Ночь") {
+            record.timeOfDay = 1;
+        }
 
         QString seasonStr = query.value("season").toString();
         if (seasonStr == "Весна") record.season = 0;
@@ -180,10 +182,15 @@ QVector<FishingRecord> DayTableWindow::getAllDataForPrediction(){
         else if (seasonStr == "Зима") record.season = 3;
 
         QString moon = query.value("moon_phase").toString();
-        if (moon == "Новолуние") record.moonPhase = 0;
-        else if (moon == "Растущая") record.moonPhase = 1;
-        else if (moon == "Полнолуние") record.moonPhase = 2;
-        else if (moon == "Убывающая") record.moonPhase = 3;
+        if (moon == "Новолуние") {
+            record.moonPhase = 0;
+        } else if (moon == "Растущий серп") {
+            record.moonPhase = 1;
+        } else if (moon == "Полнолуние") {
+            record.moonPhase = 2;
+        } else if (moon == "Убывающий серп") {
+            record.moonPhase = 3;
+        }
 
         record.recentActivity = query.value("recent_activity").toBool();
         record.catchWeight = query.value("catch_weight").toDouble();

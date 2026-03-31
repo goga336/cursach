@@ -30,6 +30,15 @@ void ViewRecord::initialize()
 
 void ViewRecord::setupUI()
 {
+    QPalette palette;
+    QLinearGradient gradient(0, 0, 0, height());
+    gradient.setColorAt(0.0, QColor(30, 90, 120));
+    gradient.setColorAt(0.5, QColor(70, 150, 170));
+    gradient.setColorAt(1.0, QColor(130, 200, 210));
+
+    palette.setBrush(QPalette::Window, QBrush(gradient));
+    this->setPalette(palette);
+    this->setAutoFillBackground(true);
     resize(1200, 800);
     this->setWindowTitle("Таблица записей о рыбалке");
 
@@ -84,7 +93,15 @@ void ViewRecord::setupUI()
     tableWidget->setSortingEnabled(true);
     //connect(tableWidget->horizontalHeader(), &QHeaderView::sectionClicked, this, &ViewRecord::saveChanges);
 
-
+    tableWidget->setAutoFillBackground(false);
+    tableWidget->setStyleSheet(
+        "QHeaderView::section {"
+        "    background-color: #2c3e50;"
+        "    color: white;"
+        "    font-weight: bold;"
+        "    padding: 4px;"
+        "}"
+        );
 
     QPushButton *saveButton = new QPushButton("Внести изменения", this);
     QString saveButtonStyle = "QPushButton {"
@@ -265,9 +282,25 @@ void ViewRecord::saveChanges()
 
         // Проверка даты
         QDate date = QDate::fromString(tableWidget->item(row, 1)->text(), "dd.MM.yyyy");
-        if (!date.isValid() || date > QDate::currentDate()) {
+        if (!date.isValid()) {
             QMessageBox::warning(this, "Ошибка",
-                                 QString("Неверная дата в строке %1 (должна быть <= текущей даты)").arg(row + 1));
+                                 QString("Неверный формат даты в строке %1 (используйте ДД.ММ.ГГГГ)").arg(row + 1));
+            QSqlDatabase::database().rollback();
+            return;
+        }
+
+        // Проверка, что дата не в будущем
+        if (date > QDate::currentDate()) {
+            QMessageBox::warning(this, "Ошибка",
+                                 QString("Дата не может быть в будущем в строке %1").arg(row + 1));
+            QSqlDatabase::database().rollback();
+            return;
+        }
+
+        // Проверка, что дата не слишком старая (например, не раньше 2000 года)
+        if (date.year() < 2000) {
+            QMessageBox::warning(this, "Ошибка",
+                                 QString("Дата не может быть раньше 2000 года в строке %1").arg(row + 1));
             QSqlDatabase::database().rollback();
             return;
         }
@@ -278,14 +311,14 @@ void ViewRecord::saveChanges()
 
         if (!startTime.isValid()) {
             QMessageBox::warning(this, "Ошибка",
-                                 QString("Неверный формат времени начала в строке %1").arg(row + 1));
+                                 QString("Неверный формат времени начала в строке %1 (используйте ЧЧ:ММ)").arg(row + 1));
             QSqlDatabase::database().rollback();
             return;
         }
 
         if (!endTime.isValid()) {
             QMessageBox::warning(this, "Ошибка",
-                                 QString("Неверный формат времени окончания в строке %1").arg(row + 1));
+                                 QString("Неверный формат времени окончания в строке %1 (используйте ЧЧ:ММ)").arg(row + 1));
             QSqlDatabase::database().rollback();
             return;
         }
@@ -298,20 +331,50 @@ void ViewRecord::saveChanges()
             return;
         }
 
-        // Вес рыбы
-        float weightDay = tableWidget->item(row, 4)->text().toFloat(&weightCorrect);
-        if (!weightCorrect || weightDay < 0) {
+        // Проверка, что рыбалка длится не больше 24 часов
+        if (startTime.secsTo(endTime) > 24 * 3600) {
             QMessageBox::warning(this, "Ошибка",
-                                 QString("Неверный формат веса (должен быть >= 0) в строке %1").arg(row + 1));
+                                 QString("Рыбалка не может длиться более 24 часов в строке %1").arg(row + 1));
             QSqlDatabase::database().rollback();
             return;
         }
 
-        // Температура воздуха (от -50 до 50)
-        float airTemperature = tableWidget->item(row, 5)->text().toFloat(&tempCorrect);
-        if (!tempCorrect || airTemperature < -50.0 || airTemperature > 50.0) {
+        // Вес рыбы
+        float weightDay = tableWidget->item(row, 4)->text().toFloat(&weightCorrect);
+        if (!weightCorrect) {
             QMessageBox::warning(this, "Ошибка",
-                                 QString("Неверная температура воздуха (от -50°C до +50°C) в строке %1").arg(row + 1));
+                                 QString("Неверный формат веса в строке %1 (используйте число)").arg(row + 1));
+            QSqlDatabase::database().rollback();
+            return;
+        }
+
+        if (weightDay < 0) {
+            QMessageBox::warning(this, "Ошибка",
+                                 QString("Вес не может быть отрицательным в строке %1").arg(row + 1));
+            QSqlDatabase::database().rollback();
+            return;
+        }
+
+        // Проверка максимального веса (например, не больше 100 кг)
+        if (weightDay > 100) {
+            QMessageBox::warning(this, "Ошибка",
+                                 QString("Вес не может превышать 100 кг в строке %1").arg(row + 1));
+            QSqlDatabase::database().rollback();
+            return;
+        }
+
+        // Температура воздуха
+        float airTemperature = tableWidget->item(row, 5)->text().toFloat(&tempCorrect);
+        if (!tempCorrect) {
+            QMessageBox::warning(this, "Ошибка",
+                                 QString("Неверный формат температуры воздуха в строке %1").arg(row + 1));
+            QSqlDatabase::database().rollback();
+            return;
+        }
+
+        if (airTemperature < -50.0 || airTemperature > 50.0) {
+            QMessageBox::warning(this, "Ошибка",
+                                 QString("Температура воздуха должна быть в диапазоне от -50°C до +50°C в строке %1").arg(row + 1));
             QSqlDatabase::database().rollback();
             return;
         }
@@ -325,31 +388,121 @@ void ViewRecord::saveChanges()
             return;
         }
 
+        // Проверка, что температура воды в разумных пределах (от -2 до 40)
+        if (waterTemperature < -2.0 || waterTemperature > 40.0) {
+            QMessageBox::warning(this, "Ошибка",
+                                 QString("Температура воды должна быть в диапазоне от -2°C до +40°C в строке %1").arg(row + 1));
+            QSqlDatabase::database().rollback();
+            return;
+        }
+
         // Давление
         float pressure = tableWidget->item(row, 7)->text().toFloat(&pressureCorrect);
-        if (!pressureCorrect || pressure < 700 || pressure > 800) {
+        if (!pressureCorrect) {
             QMessageBox::warning(this, "Ошибка",
-                                 QString("Неверное давление (от 700 до 800 мм рт.ст.) в строке %1").arg(row + 1));
+                                 QString("Неверный формат давления в строке %1").arg(row + 1));
+            QSqlDatabase::database().rollback();
+            return;
+        }
+
+        if (pressure < 700 || pressure > 800) {
+            QMessageBox::warning(this, "Ошибка",
+                                 QString("Давление должно быть в диапазоне от 700 до 800 мм рт.ст. в строке %1").arg(row + 1));
             QSqlDatabase::database().rollback();
             return;
         }
 
         // Скорость ветра
         float windSpeed = tableWidget->item(row, 8)->text().toFloat(&windSpeedCorrect);
-        if (!windSpeedCorrect || windSpeed < 0) {
+        if (!windSpeedCorrect) {
             QMessageBox::warning(this, "Ошибка",
-                                 QString("Неверная скорость ветра (должна быть >= 0) в строке %1").arg(row + 1));
+                                 QString("Неверный формат скорости ветра в строке %1").arg(row + 1));
             QSqlDatabase::database().rollback();
             return;
         }
 
+        if (windSpeed < 0) {
+            QMessageBox::warning(this, "Ошибка",
+                                 QString("Скорость ветра не может быть отрицательной в строке %1").arg(row + 1));
+            QSqlDatabase::database().rollback();
+            return;
+        }
 
+        // Максимальная скорость ветра (например, не больше 50 м/с)
+        if (windSpeed > 50) {
+            QMessageBox::warning(this, "Ошибка",
+                                 QString("Скорость ветра не может превышать 50 м/с в строке %1").arg(row + 1));
+            QSqlDatabase::database().rollback();
+            return;
+        }
+
+        // Проверка направления ветра (должно быть текстом, не пустым)
         QString windDirection = tableWidget->item(row, 9)->text();
+        if (windDirection.isEmpty()) {
+            QMessageBox::warning(this, "Ошибка",
+                                 QString("Направление ветра не может быть пустым в строке %1").arg(row + 1));
+            QSqlDatabase::database().rollback();
+            return;
+        }
+        QStringList validWindDirection = {"Северный", "Северо-восточный", "Юго-восточный",
+                                          "Южный", "Западный", "Северо-западный",
+                                          "Восточный", "Юго-западный"};
+        if (!windDirection.isEmpty() && !validWindDirection.contains(windDirection)) {
+            QMessageBox::warning(this, "Ошибка",
+                                 QString("Некорректное направление ветра в строке %1 (допустимо: )").arg(row + 1));
+            QSqlDatabase::database().rollback();
+            return;
+        }
+
+        // Проверка времени дня
         QString timeOfDay = tableWidget->item(row, 10)->text();
+        QStringList validTimesOfDay = {"Утро", "День", "Вечер", "Ночь"};
+        if (!timeOfDay.isEmpty() && !validTimesOfDay.contains(timeOfDay)) {
+            QMessageBox::warning(this, "Ошибка",
+                                 QString("Некорректное время дня в строке %1 (допустимо: Утро, День, Вечер, Ночь)").arg(row + 1));
+            QSqlDatabase::database().rollback();
+            return;
+        }
+
+        // Проверка сезона
         QString season = tableWidget->item(row, 11)->text();
+        QStringList validSeasons = {"Зима", "Весна", "Лето", "Осень"};
+        if (!season.isEmpty() && !validSeasons.contains(season)) {
+            QMessageBox::warning(this, "Ошибка",
+                                 QString("Некорректный сезон в строке %1 (допустимо: Зима, Весна, Лето, Осень)").arg(row + 1));
+            QSqlDatabase::database().rollback();
+            return;
+        }
+
+        // Проверка фазы луны
         QString moonPhase = tableWidget->item(row, 12)->text();
-        bool recentActivity = (tableWidget->item(row, 13)->text() == "Да");
+        QStringList validMoonPhases = {"Новолуние", "Растущий серп", "Полнолуние", "Убывающий серп"};
+        if (!moonPhase.isEmpty() && !validMoonPhases.contains(moonPhase)) {
+            QMessageBox::warning(this, "Ошибка",
+                                 QString("Некорректная фаза луны в строке %1").arg(row + 1));
+            QSqlDatabase::database().rollback();
+            return;
+        }
+
+        // Проверка активности
+        QString activityText = tableWidget->item(row, 13)->text();
+        if (activityText != "Да" && activityText != "Нет") {
+            QMessageBox::warning(this, "Ошибка",
+                                 QString("Активность должна быть 'Да' или 'Нет' в строке %1").arg(row + 1));
+            QSqlDatabase::database().rollback();
+            return;
+        }
+        bool recentActivity = (activityText == "Да");
+
         QString notes = tableWidget->item(row, 14)->text();
+
+        // Проверка длины заметок (не больше 500 символов)
+        if (notes.length() > 500) {
+            QMessageBox::warning(this, "Ошибка",
+                                 QString("Заметки не могут быть длиннее 500 символов в строке %1").arg(row + 1));
+            QSqlDatabase::database().rollback();
+            return;
+        }
 
         QSqlQuery fishingQuery;
         fishingQuery.prepare(

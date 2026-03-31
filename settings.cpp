@@ -32,9 +32,14 @@ void settings::initialize()
 void settings::setupUI(){
     this->resize(200, 150);
     QPalette palette;
-    QPixmap background("/home/goga/Desktop/study/cursav/photo/phone.jpg");
-    palette.setBrush(QPalette::Window, background.scaled(this->size(), Qt::IgnoreAspectRatio, Qt::SmoothTransformation));
+    QLinearGradient gradient(0, 0, 0, height());
+    gradient.setColorAt(0.0, QColor(30, 90, 120));     // светло-синий сверху
+    gradient.setColorAt(0.5, QColor(70, 150, 170));    // мягкий бирюзовый
+    gradient.setColorAt(1.0, QColor(130, 200, 210));   // очень светлый снизу
 
+    palette.setBrush(QPalette::Window, QBrush(gradient));
+    this->setPalette(palette);
+    this->setAutoFillBackground(true);
 
     this->setWindowTitle("Настройки");
     QWidget *mainwidg = new QWidget(this);

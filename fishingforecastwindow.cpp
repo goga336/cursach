@@ -74,12 +74,21 @@ void FishingForecastWindow::setupUI()
 
     setCentralWidget(centralWidget);
 
-    setStyleSheet("QGroupBox { font-size: 14px; font-weight: bold; margin-top: 10px; }"
+    setStyleSheet("QGroupBox { font-size: 14px; font-weight: bold; margin-top: 10px;  }"
                   "QGroupBox::title { subcontrol-origin: margin; left: 10px; padding: 0 5px 0 5px; }");
 }
 
 void FishingForecastWindow::createInputGroup()
 {
+    QPalette palette;
+    QLinearGradient gradient(0, 0, 0, height());
+    gradient.setColorAt(0.0, QColor(30, 90, 120));     // светло-синий сверху
+    gradient.setColorAt(0.5, QColor(70, 150, 170));    // мягкий бирюзовый
+    gradient.setColorAt(1.0, QColor(130, 200, 210));   // очень светлый снизу
+
+    palette.setBrush(QPalette::Window, QBrush(gradient));
+    this->setPalette(palette);
+    this->setAutoFillBackground(true);
     inputGroup = new QGroupBox("Введите текущие погодные условия", this);
     QFormLayout *layout = new QFormLayout(inputGroup);
 
@@ -125,17 +134,17 @@ void FishingForecastWindow::createInputGroup()
 
     // Время суток
     timeOfDayCombo = new QComboBox(this);
-    timeOfDayCombo->addItems({"Утро", "День", "Вечер", "Ночь"});
+    timeOfDayCombo->addItems({"День", "Ночь"});
     layout->addRow("Время суток:", timeOfDayCombo);
 
     // Сезон
     seasonCombo = new QComboBox(this);
-    seasonCombo->addItems({"Весна", "Лето", "Осень", "Зима"});
+    seasonCombo->addItems({"Зима", "Весна", "Лето", "Осень"});
     layout->addRow("Сезон:", seasonCombo);
 
     // Фаза луны
     moonPhaseCombo = new QComboBox(this);
-    moonPhaseCombo->addItems({"Новолуние", "Растущая", "Полнолуние", "Убывающая"});
+    moonPhaseCombo->addItems({"Новолуние", "Растущий серп", "Полнолуние", "Убывающий серп"});
     layout->addRow("Фаза луны:", moonPhaseCombo);
 
     // Недавняя активность
@@ -236,7 +245,6 @@ void FishingForecastWindow::createResultGroup()
 void FishingForecastWindow::loadWeatherDataForPrediction()
 {
     records = daytable->getAllDataForPrediction();
-    // Важно! Добавьте эту отладку
     qDebug() << "Загружено записей в FishingForecastWindow:" << records.size();
 
     if (records.isEmpty()) {
@@ -262,16 +270,34 @@ void FishingForecastWindow::exportToCSV()
     out << "air_temperature,pressure,water_temperature,wind_speed,"
         << "wind_direction,time_of_day,season,moon_phase,recent_activity,catch_weight\n";
 
-   // QVector<FishingRecord> records = getAllDataForPrediction();
     for (const auto& r : records) {
-        out << r.airTemperature << "," << r.pressure << ","
-            << r.waterTemperature << "," << r.windSpeed << ","
-            << r.windDirection << "," << r.timeOfDay << ","
-            << r.season << "," << r.moonPhase << ","
+        // НОРМАЛИЗУЕМ значения
+
+        // time_of_day: 0=День, 1=Ночь -> 0.0 или 1.0
+        double timeOfDayNorm = r.timeOfDay;  // уже 0 или 1
+
+        // season: 0=Зима, 1=Весна, 2=Лето, 3=Осень -> 0.0, 0.33, 0.66, 1.0
+        double seasonNorm = r.season / 3.0;
+
+        // moon_phase: 0=Новолуние, 1=Растущий серп, 2=Полнолуние, 3=Убывающий серп -> 0.0, 0.33, 0.66, 1.0
+        double moonPhaseNorm = r.moonPhase / 3.0;
+
+        // wind_direction: 0-7 -> 0.0-1.0
+        double windDirNorm = r.windDirection / 7.0;
+
+        out << r.airTemperature << ","
+            << r.pressure << ","
+            << r.waterTemperature << ","
+            << r.windSpeed << ","
+            << windDirNorm << ","
+            << timeOfDayNorm << ","      // 0.0 или 1.0
+            << seasonNorm << ","         // 0.0, 0.33, 0.66, 1.0
+            << moonPhaseNorm << ","      // 0.0, 0.33, 0.66, 1.0
             << (r.recentActivity ? 1 : 0) << ","
             << r.catchWeight << "\n";
     }
     file.close();
+
 }
 
 bool FishingForecastWindow::loadPythonModel(const QString& filename) {
@@ -318,6 +344,7 @@ void FishingForecastWindow::trainModelPy() {
 }
 
 QVector<double> FishingForecastWindow::prepareFeaturesFromInput()
+
 {
     QVector<double> features;
 
@@ -333,17 +360,17 @@ QVector<double> FishingForecastWindow::prepareFeaturesFromInput()
     // 4. Скорость ветра (нормализованная)
     features.append(normalize(windSpeedSpinBox->value(), 0, 50));
 
-    // 5. Направление ветра (one-hot encoding - упрощенно)
-    features.append(windDirectionCombo->currentIndex() / 7.0); // 0-1
+    // 5. Направление ветра (0-1) - 8 направлений
+    features.append(windDirectionCombo->currentIndex() / 7.0);
 
-    // 6. Время суток
-    features.append(timeOfDayCombo->currentIndex() / 3.0);
+    // 6. Время суток (0-1) - ТЕПЕРЬ 2 значения!
+    features.append(timeOfDayCombo->currentIndex() / 1.0);  // 0 или 1
 
-    // 7. Сезон
-    features.append(seasonCombo->currentIndex() / 3.0);
+    // 7. Сезон (0-1) - 4 сезона, но нормализуем в 0.0-1.0
+    features.append(seasonCombo->currentIndex() / 3.0);  // 0,1,2,3 -> 0.0,0.33,0.66,1.0
 
-    // 8. Фаза луны
-    features.append(moonPhaseCombo->currentIndex() / 3.0);
+    // 8. Фаза луны (0-1) - 4 фазы
+    features.append(moonPhaseCombo->currentIndex() / 3.0);  // 0,1,2,3 -> 0.0,0.33,0.66,1.0
 
     // 9. Недавняя активность
     features.append(recentActivityCheck->isChecked() ? 1.0 : 0.0);
@@ -491,7 +518,7 @@ void FishingForecastWindow::onWeatherLoaded()
     pressureSpinBox->setValue(weather->pressure * 0.750062);
     windSpeedSpinBox->setValue(weather->windSpeed);
 
-    // Направление ветра
+    // Направление ветра (оставляем как было)
     QString windDir;
     if (weather->windDeg >= 337.5 || weather->windDeg < 22.5) windDir = "Северный";
     else if (weather->windDeg >= 22.5 && weather->windDeg < 67.5) windDir = "Северо-восточный";
@@ -505,11 +532,12 @@ void FishingForecastWindow::onWeatherLoaded()
     int index = windDirectionCombo->findText(windDir);
     if (index >= 0) windDirectionCombo->setCurrentIndex(index);
 
-    // Время дня
+    // ВРЕМЯ СУТОК - теперь только День/Ночь
     QTime now = QTime::currentTime();
-    timeOfDayCombo->setCurrentText(now.hour() >= 6 && now.hour() < 18 ? "День" : "Ночь");
+    bool isDay = (now.hour() >= 6 && now.hour() < 18);
+    timeOfDayCombo->setCurrentText(isDay ? "День" : "Ночь");
 
-    // Сезон
+    // СЕЗОН - порядок: Зима, Весна, Лето, Осень
     int month = QDate::currentDate().month();
     QString seasonStr;
     if (month == 12 || month == 1 || month == 2) seasonStr = "Зима";
@@ -520,7 +548,8 @@ void FishingForecastWindow::onWeatherLoaded()
     int seasonIndex = seasonCombo->findText(seasonStr);
     if (seasonIndex >= 0) seasonCombo->setCurrentIndex(seasonIndex);
 
-
+    // ФАЗА ЛУНЫ - пока оставляем как есть (нужно будет добавить расчет)
+    // Можно добавить расчет фазы луны по дате
 
     QMessageBox::information(this, "Успех",
                              QString("Погода для города %1 загружена!").arg(weather->cityName));

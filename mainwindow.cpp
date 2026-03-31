@@ -31,11 +31,15 @@ void MainWindow::setupUI() {
 }
 
 void MainWindow::createScrollArea(){
-    //QGroupBox *inputGroup = new QGroupBox("Введите текущие погодные условия", this);
     QPalette palette;
-    QPixmap background("/home/goga/Desktop/study/8_semestr/diplom/phone.png");
-    palette.setBrush(QPalette::Window, background.scaled(this->size(), Qt::IgnoreAspectRatio, Qt::SmoothTransformation));
+    QLinearGradient gradient(0, 0, 0, height());
+    gradient.setColorAt(0.0, QColor(30, 90, 120));     // светло-синий сверху
+    gradient.setColorAt(0.5, QColor(70, 150, 170));    // мягкий бирюзовый
+    gradient.setColorAt(1.0, QColor(130, 200, 210));   // очень светлый снизу
+
+    palette.setBrush(QPalette::Window, QBrush(gradient));
     this->setPalette(palette);
+    this->setAutoFillBackground(true);
 
     QVBoxLayout *lauoutmain = new QVBoxLayout();
 
@@ -141,14 +145,14 @@ void MainWindow::createScrollArea(){
 
     setCentralWidget(mainwidget);
 
-    mainwidget->setStyleSheet(
-        "QWidget {"
-        "background-image: url(/home/goga/Desktop/study/8_semestr/diplom/phone.png);"
-        "background-position: center;"
-        "background-repeat: no-repeat;"
-        "background-size: cover;"
-        "}"
-        );
+    // mainwidget->setStyleSheet(
+    //     "QWidget {"
+    //     "background-image: url(/home/goga/Desktop/study/8_semestr/diplom/phone.png);"
+    //     "background-position: center;"
+    //     "background-repeat: no-repeat;"
+    //     "background-size: cover;"
+    //     "}"
+    //     );
 
     connect(buttonRecordDay, &QPushButton::clicked, this, &MainWindow::hadlerButton1);
     connect(button2, &QPushButton::clicked, this, &MainWindow::hadlerButton2);

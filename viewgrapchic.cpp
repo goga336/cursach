@@ -39,9 +39,21 @@ void ViewGrapchic::setupUI()
     QVBoxLayout *mainLayout = new QVBoxLayout(centralWidget);
     setCentralWidget(centralWidget);
 
+    QPalette palette;
+    QLinearGradient gradient(0, 0, 0, height());
+    gradient.setColorAt(0.0, QColor(30, 80, 120));     // светло-синий сверху
+    gradient.setColorAt(0.5, QColor(70, 150, 170));    // мягкий бирюзовый
+    gradient.setColorAt(1.0, QColor(130, 200, 210));   // очень светлый снизу
+
+    palette.setBrush(QPalette::Window, QBrush(gradient));
+    this->setPalette(palette);
+    this->setAutoFillBackground(true);
+
     // Верхняя панель
     QHBoxLayout *topPanel = new QHBoxLayout();
-    topPanel->addWidget(new QLabel("Режим отображения:"));
+    QLabel *modeLabel = new QLabel("Режим отображения:");
+    modeLabel->setStyleSheet("color: white;");
+    topPanel->addWidget(modeLabel);
 
     // Главный комбобокс
     mainComboBox = new QComboBox(this);

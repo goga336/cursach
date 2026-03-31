@@ -24,6 +24,15 @@ void WeatherWindow::showWindow()
 
 void WeatherWindow::setupUI()
 {
+    QPalette palette;
+    QLinearGradient gradient(0, 0, 0, height());
+    gradient.setColorAt(0.0, QColor(30, 90, 120));     // светло-синий сверху
+    gradient.setColorAt(0.5, QColor(70, 150, 170));    // мягкий бирюзовый
+    gradient.setColorAt(1.0, QColor(130, 200, 210));   // очень светлый снизу
+
+    palette.setBrush(QPalette::Window, QBrush(gradient));
+    this->setPalette(palette);
+    this->setAutoFillBackground(true);
     this->setWindowTitle("Текущая погода");
     labelWeather = new QLabel("Загрузка данных о погоде...", this);
     QVBoxLayout *layout = new QVBoxLayout();
