@@ -309,6 +309,7 @@ bool FishingForecastWindow::loadPythonModel(const QString& filename) {
     QJsonDocument doc = QJsonDocument::fromJson(data);
     QJsonObject obj = doc.object();
 
+    // Загружаем коэффициенты
     QJsonArray coefArray = obj["coefficients"].toArray();
     model.coefficients.resize(coefArray.size());
     for (int i = 0; i < coefArray.size(); ++i)
@@ -317,6 +318,15 @@ bool FishingForecastWindow::loadPythonModel(const QString& filename) {
     model.intercept = obj["intercept"].toDouble();
     model.maxWeight = obj["max_weight"].toDouble();
     model.isValid = true;
+
+    //загружаем метрики
+    QJsonObject metrics = obj["metrics"].toObject();
+    modelMetrics.r2 = metrics["r2"].toDouble();
+    modelMetrics.train_r2 = metrics["train_r2"].toDouble();
+    modelMetrics.test_r2 = metrics["test_r2"].toDouble();
+    modelMetrics.gap = metrics["gap"].toDouble();
+    modelMetrics.cv_mean = metrics["cv_mean"].toDouble();
+    modelMetrics.cv_std = metrics["cv_std"].toDouble();
 
     return true;
 }
@@ -334,8 +344,8 @@ void FishingForecastWindow::trainModelPy() {
                                   process.readAllStandardError());
         return;
     }
-
-    if (loadPythonModel("model_coefficients.json")) {
+    QString modelPath = "/home/goga/Desktop/study/8_semestr/diplom/fish_app/cursach/build/Desktop-Debug/model_coefficients.json";
+    if (loadPythonModel(modelPath)) {
         modelLoaded = true;
         modelStatusLabel->setText("Модель обучена через Python");
         modelStatusLabel->setStyleSheet("color: #28a745; font-style: normal;");
@@ -407,8 +417,55 @@ void FishingForecastWindow::onTrainModelClicked()
     modelStatusLabel->setText("Обучение модели через Python...");
     modelStatusLabel->setStyleSheet("color: #ffc075; font-style: italic;");
 
-    // Вызываем Python-обучение
     trainModelPy();
+
+    // НОВОЕ: показываем метрики после обучения
+    if (modelLoaded && model.isValid) {
+        QString metricsText;
+
+        // Проверка данных
+        int n_samples = records.size();
+        int n_features = 9;
+        int min_needed = n_features * 10;
+
+        metricsText += "═══════════════════════════════════════\n";
+        metricsText += "📊 ДАННЫЕ:\n";
+        metricsText += QString("   Записей: %1 (мин. нужно: %2)\n").arg(n_samples).arg(min_needed);
+
+        if (n_samples >= min_needed) {
+            metricsText += "   ✅ Данных достаточно\n";
+        } else {
+            metricsText += QString("   ⚠ Нужно еще %1 записей\n").arg(min_needed - n_samples);
+        }
+
+        // Метрики
+        metricsText += "\n📈 КАЧЕСТВО МОДЕЛИ:\n";
+        metricsText += QString("   R² (общая): %1\n").arg(modelMetrics.r2, 0, 'f', 4);
+        metricsText += QString("   Train R²: %1\n").arg(modelMetrics.train_r2, 0, 'f', 4);
+        metricsText += QString("   Test R²: %1\n").arg(modelMetrics.test_r2, 0, 'f', 4);
+        metricsText += QString("   Разрыв: %1\n").arg(modelMetrics.gap, 0, 'f', 4);
+        metricsText += QString("   CV (5-fold): %1 ± %2\n").arg(modelMetrics.cv_mean, 0, 'f', 4).arg(modelMetrics.cv_std, 0, 'f', 4);
+
+        // Диагностика
+        metricsText += "\n⚠️ ДИАГНОСТИКА:\n";
+        if (modelMetrics.gap > 0.2) {
+            metricsText += "   🔴 ВЫСОКИЙ РИСК ПЕРЕОБУЧЕНИЯ!\n";
+        } else if (modelMetrics.gap > 0.1) {
+            metricsText += "   🟡 ЕСТЬ РИСК ПЕРЕОБУЧЕНИЯ\n";
+        } else {
+            metricsText += "   ✅ ПЕРЕОБУЧЕНИЯ НЕТ\n";
+        }
+
+        if (modelMetrics.cv_std > 0.1) {
+            metricsText += "   ⚠️ Модель нестабильна (CV std > 0.1)\n";
+        } else {
+            metricsText += "   ✅ Модель стабильна\n";
+        }
+
+        metricsText += "═══════════════════════════════════════";
+
+        QMessageBox::information(this, "Результаты обучения", metricsText);
+    }
 
     trainingProgress->setVisible(false);
 }

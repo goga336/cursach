@@ -31,6 +31,15 @@ struct LinearRegressionModel {
     LinearRegressionModel() : intercept(0.0), isValid(false) {}
 };
 
+struct ModelMetrics {
+    double r2;
+    double train_r2;
+    double test_r2;
+    double gap;
+    double cv_mean;
+    double cv_std;
+};
+
 class FishingForecastWindow : public QMainWindow, public IWindow
 {
     Q_OBJECT
@@ -98,6 +107,7 @@ private:
     QVector<float> catches;
 
     LinearRegressionModel model;
+    ModelMetrics modelMetrics;
 
     bool modelLoaded;
     QString currentModelPath;

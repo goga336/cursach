@@ -34,32 +34,28 @@ void ViewGrapchic::setupUI()
 {
     resize(900, 900);
 
-    // Главный виджет
     QWidget *centralWidget = new QWidget(this);
     QVBoxLayout *mainLayout = new QVBoxLayout(centralWidget);
     setCentralWidget(centralWidget);
 
     QPalette palette;
     QLinearGradient gradient(0, 0, 0, height());
-    gradient.setColorAt(0.0, QColor(30, 80, 120));     // светло-синий сверху
-    gradient.setColorAt(0.5, QColor(70, 150, 170));    // мягкий бирюзовый
-    gradient.setColorAt(1.0, QColor(130, 200, 210));   // очень светлый снизу
+    gradient.setColorAt(0.0, QColor(30, 80, 120));
+    gradient.setColorAt(0.5, QColor(70, 150, 170));
+    gradient.setColorAt(1.0, QColor(130, 200, 210));
 
     palette.setBrush(QPalette::Window, QBrush(gradient));
     this->setPalette(palette);
     this->setAutoFillBackground(true);
 
-    // Верхняя панель
     QHBoxLayout *topPanel = new QHBoxLayout();
     QLabel *modeLabel = new QLabel("Режим отображения:");
     modeLabel->setStyleSheet("color: white;");
     topPanel->addWidget(modeLabel);
 
-    // Главный комбобокс
     mainComboBox = new QComboBox(this);
     mainComboBox->addItem("Все года");
 
-    // Добавляем все годы из БД
     QSqlQuery yearQuery("SELECT DISTINCT EXTRACT(YEAR FROM fishing_date) AS year FROM fishing_day ORDER BY year");
     while (yearQuery.next()) {
         mainComboBox->addItem(yearQuery.value(0).toString());
@@ -70,7 +66,6 @@ void ViewGrapchic::setupUI()
     topPanel->addStretch();
     mainLayout->addLayout(topPanel);
 
-    // Панель для наложения графиков (изначально скрыта)
     overlayPanel = new QWidget(this);
     QHBoxLayout *overlayLayout = new QHBoxLayout(overlayPanel);
     overlayLayout->setContentsMargins(0, 0, 0, 0);
@@ -87,16 +82,13 @@ void ViewGrapchic::setupUI()
     mainLayout->addWidget(overlayPanel);
     overlayPanel->hide();
 
-    // Заполняем комбобоксы для наложения годами
     loadYearsToComboBox(overlayYear1);
     loadYearsToComboBox(overlayYear2);
 
-    // Создаем chartView
     chartView = new QChartView(this);
     chartView->setRenderHint(QPainter::Antialiasing);
     mainLayout->addWidget(chartView);
 
-    // Подключаем сигналы
     connect(mainComboBox, &QComboBox::currentTextChanged,
             this, &ViewGrapchic::onMainComboBoxChanged);
     connect(overlayYear1, &QComboBox::currentTextChanged,
@@ -104,7 +96,6 @@ void ViewGrapchic::setupUI()
     connect(overlayYear2, &QComboBox::currentTextChanged,
             this, &ViewGrapchic::onOverlayYearChanged);
 
-    // Загружаем начальные данные (Все года)
     buildAllYearsGraph();
 }
 
@@ -120,15 +111,13 @@ void ViewGrapchic::loadYearsToComboBox(QComboBox *comboBox)
 void ViewGrapchic::onMainComboBoxChanged(const QString &text)
 {
     if (text == "Наложение графиков") {
-        // Показываем панель выбора годов для наложения
         overlayPanel->show();
 
-        // Загружаем данные для первого и второго года из комбобоксов наложения
         if (overlayYear1->count() > 0 && overlayYear2->count() > 0) {
             buildOverlayGraph(overlayYear1->currentText(), overlayYear2->currentText());
         }
     } else {
-        // Скрываем панель наложения
+
         overlayPanel->hide();
 
         if (text == "Все года") {
@@ -248,14 +237,10 @@ void ViewGrapchic::buildOverlayGraph(const QString &year1, const QString &year2)
         return;
     }
 
-    // Загружаем данные для первого года
-    QVector<QDate> dates1;
-    QVector<float> weights1;
+    // Загружаем данные
+    QVector<QDate> dates1, dates2;
+    QVector<float> weights1, weights2;
     dbManager->getFishingDataForGraphic(dates1, weights1, year1);
-
-    // Загружаем данные для второго года
-    QVector<QDate> dates2;
-    QVector<float> weights2;
     dbManager->getFishingDataForGraphic(dates2, weights2, year2);
 
     if ((dates1.isEmpty() || weights1.isEmpty()) &&
@@ -269,31 +254,25 @@ void ViewGrapchic::buildOverlayGraph(const QString &year1, const QString &year2)
 
     QDateTimeAxis *axisX = new QDateTimeAxis();
     axisX->setTitleText("Дата");
-    axisX->setFormat("dd.MM.yyyy");
-    axisX->setTickCount(8);
+    axisX->setFormat("dd.MM");
+    axisX->setTickCount(12);
     chart->addAxis(axisX, Qt::AlignBottom);
 
     QValueAxis *axisY = new QValueAxis();
     axisY->setTitleText("Вес рыбы (кг)");
-    axisY->setLabelFormat("%.1f");
-    axisY->setTickCount(8);
     chart->addAxis(axisY, Qt::AlignLeft);
 
     float maxWeight = 0;
-    QDate minDate, maxDate;
-
-    // Первая серия (синий)
-    if (!dates1.isEmpty() && !weights1.isEmpty()) {
+    if (!dates1.isEmpty()) {
         QLineSeries *series1 = new QLineSeries();
         series1->setName(year1 + " год");
 
         for (int i = 0; i < dates1.size(); ++i) {
-            qint64 xValue = QDateTime(dates1[i].startOfDay()).toMSecsSinceEpoch();
+            QDate fakeDate(2000, dates1[i].month(), dates1[i].day());
+            qint64 xValue = QDateTime(fakeDate.startOfDay()).toMSecsSinceEpoch();
             series1->append(xValue, weights1[i]);
 
             if (weights1[i] > maxWeight) maxWeight = weights1[i];
-            if (!minDate.isValid() || dates1[i] < minDate) minDate = dates1[i];
-            if (!maxDate.isValid() || dates1[i] > maxDate) maxDate = dates1[i];
         }
 
         chart->addSeries(series1);
@@ -301,8 +280,7 @@ void ViewGrapchic::buildOverlayGraph(const QString &year1, const QString &year2)
         series1->attachAxis(axisY);
     }
 
-    // Вторая серия (красный)
-    if (!dates2.isEmpty() && !weights2.isEmpty()) {
+    if (!dates2.isEmpty()) {
         QLineSeries *series2 = new QLineSeries();
         series2->setName(year2 + " год");
 
@@ -311,12 +289,11 @@ void ViewGrapchic::buildOverlayGraph(const QString &year1, const QString &year2)
         series2->setPen(pen);
 
         for (int i = 0; i < dates2.size(); ++i) {
-            qint64 xValue = QDateTime(dates2[i].startOfDay()).toMSecsSinceEpoch();
+            QDate fakeDate(2000, dates2[i].month(), dates2[i].day());
+            qint64 xValue = QDateTime(fakeDate.startOfDay()).toMSecsSinceEpoch();
             series2->append(xValue, weights2[i]);
 
             if (weights2[i] > maxWeight) maxWeight = weights2[i];
-            if (!minDate.isValid() || dates2[i] < minDate) minDate = dates2[i];
-            if (!maxDate.isValid() || dates2[i] > maxDate) maxDate = dates2[i];
         }
 
         chart->addSeries(series2);
@@ -324,10 +301,9 @@ void ViewGrapchic::buildOverlayGraph(const QString &year1, const QString &year2)
         series2->attachAxis(axisY);
     }
 
-    // Устанавливаем диапазоны
-    if (minDate.isValid() && maxDate.isValid()) {
-        axisX->setRange(minDate.startOfDay(), maxDate.startOfDay());
-    }
+    QDate startDate(2000, 1, 1);
+    QDate endDate(2000, 12, 31);
+    axisX->setRange(startDate.startOfDay(), endDate.startOfDay());
 
     if (maxWeight > 0) {
         axisY->setRange(0, maxWeight + 5);
@@ -335,7 +311,6 @@ void ViewGrapchic::buildOverlayGraph(const QString &year1, const QString &year2)
 
     chartView->setChart(chart);
 }
-
 void ViewGrapchic::clearChart()
 {
     QChart *emptyChart = new QChart();
