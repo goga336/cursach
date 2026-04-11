@@ -249,12 +249,6 @@ void FishingForecastWindow::loadWeatherDataForPrediction()
 
     if (records.isEmpty()) {
         qDebug() << "ВНИМАНИЕ: records пуст!";
-    } else {
-        // Выведите первую запись для проверки
-        const auto& first = records.first();
-        qDebug() << "Первая запись - дата:" << first.date
-                 << "температура:" << first.airTemperature
-                 << "вес:" << first.catchWeight;
     }
 }
 
@@ -419,7 +413,6 @@ void FishingForecastWindow::onTrainModelClicked()
 
     trainModelPy();
 
-    // НОВОЕ: показываем метрики после обучения
     if (modelLoaded && model.isValid) {
         QString metricsText;
 
@@ -457,7 +450,7 @@ void FishingForecastWindow::onTrainModelClicked()
         }
 
         if (modelMetrics.cv_std > 0.1) {
-            metricsText += "   ⚠️ Модель нестабильна (CV std > 0.1)\n";
+            metricsText += "   🔴 Модель нестабильна (CV std > 0.1)\n";
         } else {
             metricsText += "   ✅ Модель стабильна\n";
         }
@@ -474,40 +467,39 @@ void FishingForecastWindow::onTrainModelClicked()
 
 void FishingForecastWindow::onLoadModelClicked()
 {
+    QString appPath = QCoreApplication::applicationDirPath();
+    QString modelsPath = appPath + "/model_coefficients.json";
     QString fileName = QFileDialog::getOpenFileName(this,
                                                     "Выберите файл с коэффициентами модели",
-                                                    QDir::homePath(),
-                                                    "Текстовые файлы (*.txt);;Все файлы (*.*)");
+                                                    modelsPath,
+                                                    "JSON файлы (*.json);;Все файлы (*.*)");
 
     if (!fileName.isEmpty()) {
-
         trainingProgress->setVisible(true);
         trainingProgress->setValue(0);
 
-        for (int i = 0; i <= 100; i += 25) {
-            trainingProgress->setValue(i);
-            QApplication::processEvents();
-            QThread::msleep(50);
+        if (loadPythonModel(fileName)) {
+            for (int i = 0; i <= 100; i += 25) {
+                trainingProgress->setValue(i);
+                QApplication::processEvents();
+                QThread::msleep(50);
+            }
+
+            modelLoaded = true;
+            currentModelPath = fileName;
+            modelStatusLabel->setText("Коэффициенты загружены: " + fileName.split("/").last());
+            modelStatusLabel->setStyleSheet("color: #28a745; font-style: normal;");
+
+            QMessageBox::information(this, "Успех",
+                                     QString("Коэффициенты модели успешно загружены!\n"
+                                             "Max weight: %1 кг").arg(model.maxWeight));
+        } else {
+            QMessageBox::warning(this, "Ошибка", "Не удалось загрузить коэффициенты из файла!");
         }
 
-
-        model.coefficients.resize(9);
-        for (int i = 0; i < 9; ++i) {
-            model.coefficients[i] = 0.1;
-        }
-        model.intercept = 0.3;
-        model.isValid = true;
-
-        modelLoaded = true;
-        currentModelPath = fileName;
-        modelStatusLabel->setText("Коэффициенты загружены: " + fileName.split("/").last());
-        modelStatusLabel->setStyleSheet("color: #28a745; font-style: normal;");
         trainingProgress->setVisible(false);
-
-        QMessageBox::information(this, "Успех", "Коэффициенты модели успешно загружены!");
     }
 }
-
 void FishingForecastWindow::onMakePredictionClicked()
 {
     if (!modelLoaded || !model.isValid) {
@@ -519,7 +511,6 @@ void FishingForecastWindow::onMakePredictionClicked()
     QVector<double> features = prepareFeaturesFromInput();
     double probability = predictWithModel(features);
 
-    // Используем maxWeight из модели, а не фиксированное 10.0
     double expectedWeight = probability * model.maxWeight;
 
     updatePredictionResult(probability, expectedWeight);
@@ -569,13 +560,11 @@ void FishingForecastWindow::updatePredictionResult(double probability, double ex
 
 void FishingForecastWindow::onWeatherLoaded()
 {
-    // Заполняем поля
     airTempSpinBox->setValue(weather->temperature);
     waterTempSpinBox->setValue(weather->temperature * 0.8);
     pressureSpinBox->setValue(weather->pressure * 0.750062);
     windSpeedSpinBox->setValue(weather->windSpeed);
 
-    // Направление ветра (оставляем как было)
     QString windDir;
     if (weather->windDeg >= 337.5 || weather->windDeg < 22.5) windDir = "Северный";
     else if (weather->windDeg >= 22.5 && weather->windDeg < 67.5) windDir = "Северо-восточный";
@@ -605,8 +594,6 @@ void FishingForecastWindow::onWeatherLoaded()
     int seasonIndex = seasonCombo->findText(seasonStr);
     if (seasonIndex >= 0) seasonCombo->setCurrentIndex(seasonIndex);
 
-    // ФАЗА ЛУНЫ - пока оставляем как есть (нужно будет добавить расчет)
-    // Можно добавить расчет фазы луны по дате
 
     QMessageBox::information(this, "Успех",
                              QString("Погода для города %1 загружена!").arg(weather->cityName));
