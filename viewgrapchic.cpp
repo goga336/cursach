@@ -70,11 +70,17 @@ void ViewGrapchic::setupUI()
     QHBoxLayout *overlayLayout = new QHBoxLayout(overlayPanel);
     overlayLayout->setContentsMargins(0, 0, 0, 0);
 
-    overlayLayout->addWidget(new QLabel("Год 1:"));
+    QLabel *yearLabel= new QLabel("Год 1:");
+    yearLabel->setStyleSheet("color: white;");
+    overlayLayout->addWidget(yearLabel);
     overlayYear1 = new QComboBox(this);
     overlayLayout->addWidget(overlayYear1);
 
-    overlayLayout->addWidget(new QLabel("Год 2:"));
+
+    QLabel *yearLabel2 = new QLabel("Год 2:");
+    yearLabel2->setStyleSheet("color: white;");
+    overlayLayout->addWidget(yearLabel2);
+
     overlayYear2 = new QComboBox(this);
     overlayLayout->addWidget(overlayYear2);
 

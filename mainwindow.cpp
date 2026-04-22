@@ -25,8 +25,9 @@ void MainWindow::initialize()
 }
 
 void MainWindow::setupUI() {
-    resize(500, 300);
+    //resize(300, 300);
     this->setWindowTitle("Главная страница");
+    this->setFixedSize(800, 500);
     createScrollArea();
 }
 
@@ -44,17 +45,17 @@ void MainWindow::createScrollArea(){
     QVBoxLayout *lauoutmain = new QVBoxLayout();
 
 
-    QString UserName;
-    daytable->getFromDatabase(UserName);
-    labelwelcome = new QLabel("Добро пожаловать, " + UserName, this);
-    labelwelcome->setStyleSheet("font-size: 16px; color: white; font-weight: normal; padding: 5px;");
-    lauoutmain->addWidget(labelwelcome);
-    labelwelcome->setObjectName("welcomeLabel");
+    // QString UserName;
+    // daytable->getFromDatabase(UserName);
+    // labelwelcome = new QLabel("Добро пожаловать, " + UserName, this);
+    // labelwelcome->setStyleSheet("font-size: 16px; color: white; font-weight: normal; padding: 5px;");
+    // lauoutmain->addWidget(labelwelcome);
+    // labelwelcome->setObjectName("welcomeLabel");
 
 
-    QLabel *fishermanImage = new QLabel(this);
-    daytable->loadFisherPhoto(fishermanImage, 1); // ID пользователя, например 1
-    fishermanImage->setAlignment(Qt::AlignCenter);
+    // QLabel *fishermanImage = new QLabel(this);
+    // daytable->loadFisherPhoto(fishermanImage, 1);
+    // fishermanImage->setAlignment(Qt::AlignCenter);
 
 
     QWidget *container = new QWidget(this);
@@ -69,26 +70,26 @@ void MainWindow::createScrollArea(){
     QPushButton *buttonRecordDay = new QPushButton(this);
     QPushButton *button2 = new QPushButton(this);
     QPushButton *button3 = new QPushButton(this);
-    QPushButton *button4 = new QPushButton(this);
+    //QPushButton *button4 = new QPushButton(this);
     QPushButton *button5 = new QPushButton(this);
     QPushButton *button6 = new QPushButton(this);
 
     buttonRecordDay->setText("Записать день");
     button2->setText("Построить график");
     button3->setText("Посмотреть все записи");
-    button4->setText("Настройки");
+   // button4->setText("Настройки");
     button5->setText("Погода");
     button6->setText("Прогноз клева");
 
     buttonRecordDay->setObjectName("button1");
     button2->setObjectName("button2");
     button3->setObjectName("button3");
-    button4->setObjectName("button4");
+   // button4->setObjectName("button4");
 
     layout->addWidget(buttonRecordDay);
     layout->addWidget(button2);
     layout->addWidget(button3);
-    layout->addWidget(button4);
+    //layout->addWidget(button4);
     layout->addWidget(button5);
     layout->addWidget(button6);
 
@@ -96,7 +97,7 @@ void MainWindow::createScrollArea(){
     buttonRecordDay->setFixedSize(200, 120);
     button2->setFixedSize(200, 120);
     button3->setFixedSize(200, 120);
-    button4->setFixedSize(200, 120);
+    //button4->setFixedSize(200, 120);
     button5->setFixedSize(200, 120);
     button6->setFixedSize(200, 120);
 
@@ -115,7 +116,7 @@ void MainWindow::createScrollArea(){
     buttonRecordDay->setStyleSheet(buttonStyle);
     button2->setStyleSheet(buttonStyle);
     button3->setStyleSheet(buttonStyle);
-    button4->setStyleSheet(buttonStyle);
+   // button4->setStyleSheet(buttonStyle);
     button5->setStyleSheet(buttonStyle);
     button6->setStyleSheet(buttonStyle);
 
@@ -129,7 +130,7 @@ void MainWindow::createScrollArea(){
     container->setLayout(layout);
     scrollarea->setWidget(container);
     lauoutmain->addWidget(scrollarea);
-    lauoutmain->addWidget(fishermanImage);
+    //lauoutmain->addWidget(fishermanImage);
     lauoutmain->addWidget(recentday);
     lauoutmain->addWidget(counter);
     lauoutmain->addWidget(temperatureLabel);
@@ -157,7 +158,7 @@ void MainWindow::createScrollArea(){
     connect(buttonRecordDay, &QPushButton::clicked, this, &MainWindow::hadlerButton1);
     connect(button2, &QPushButton::clicked, this, &MainWindow::hadlerButton2);
     connect(button3, &QPushButton::clicked, this, &MainWindow::hadlerButton3);
-    connect(button4, &QPushButton::clicked, this, &MainWindow::hadlerButton4);
+   // connect(button4, &QPushButton::clicked, this, &MainWindow::hadlerButton4);
     connect(button5, &QPushButton::clicked, this, &MainWindow::hadlerButton5);
     connect(button6, &QPushButton::clicked, this, &MainWindow::hadlerButton6);
 }

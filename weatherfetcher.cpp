@@ -41,6 +41,9 @@ void WeatherWindow::setupUI()
     selectCity = new QComboBox();
     selectCity->addItems({"Москва", "Санкт-Петербург", "Нижний Новгород", "Рязань", "Воронеж", "Тула", "Ярославль"});
     layout->addWidget(selectCity);
+    QString labelStyle = "font-size: 16px; color: black; font-weight: normal; padding: 5px;";
+    selectCity->setStyleSheet(labelStyle);
+
 
     layout->addWidget(labelWeather);
 
@@ -159,7 +162,8 @@ void WeatherWindow::handleWeatherResponse(QNetworkReply *reply)
                                   .arg(description)
                                   .arg(QDateTime::fromSecsSinceEpoch(sunrise).toString("hh:mm"))
                                   .arg(QDateTime::fromSecsSinceEpoch(sunset).toString("hh:mm")));
-
+        QString labelStyle = "font-size: 16px; color: black; font-weight: normal; padding: 5px;";
+        labelWeather->setStyleSheet(labelStyle);
     }
     else
     {

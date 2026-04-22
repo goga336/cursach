@@ -74,7 +74,7 @@ void FishingForecastWindow::setupUI()
 
     setCentralWidget(centralWidget);
 
-    setStyleSheet("QGroupBox { font-size: 14px; font-weight: bold; margin-top: 10px;  }"
+    setStyleSheet("QGroupBox { font-size: 14px; font-weight: bold; margin-top: 10px; color: white; }"
                   "QGroupBox::title { subcontrol-origin: margin; left: 10px; padding: 0 5px 0 5px; }");
 }
 
@@ -91,6 +91,7 @@ void FishingForecastWindow::createInputGroup()
     this->setAutoFillBackground(true);
     inputGroup = new QGroupBox("Введите текущие погодные условия", this);
     QFormLayout *layout = new QFormLayout(inputGroup);
+    inputGroup->setStyleSheet("QLabel { color: white; }");
 
     // Дата и время
     dateTimeEdit = new QDateTimeEdit(QDateTime::currentDateTime(), this);
@@ -148,12 +149,12 @@ void FishingForecastWindow::createInputGroup()
     layout->addRow("Фаза луны:", moonPhaseCombo);
 
     // Недавняя активность
-    recentActivityCheck = new QCheckBox("Была ли недавняя активность рыбы?", this);
+    recentActivityCheck = new QCheckBox("Был ли рыболовный прессинг за последние 24 часа?", this);
+    recentActivityCheck->setStyleSheet("QCheckBox { color: white; }");
     layout->addRow("", recentActivityCheck);
 
     weatherButton = new QPushButton ("Загрузить погоду");
     weatherButton->setStyleSheet("QPushButton {"
-                                 "font-size: 14px;"
                                  "font-weight: bold;"
                                  "color: white;"
                                  "background-color: #007BFF;"
@@ -183,13 +184,13 @@ void FishingForecastWindow::createModelGroup()
 
     QHBoxLayout *buttonLayout = new QHBoxLayout();
 
-    trainButton = new QPushButton("Обучить модель (линейная регрессия)", this);
-    trainButton->setStyleSheet("QPushButton { background-color: #28a745; color: white; padding: 8px; border-radius: 5px; }"
+    trainButton = new QPushButton("Обучить модель", this);
+    trainButton->setStyleSheet("QPushButton { background-color: #28a745; color: white; padding: 8px; border-radius: 5px; font-weight: bold;}"
                                "QPushButton:hover { background-color: #218838; }");
     connect(trainButton, &QPushButton::clicked, this, &FishingForecastWindow::onTrainModelClicked);
 
     loadModelButton = new QPushButton("Загрузить коэффициенты", this);
-    loadModelButton->setStyleSheet("QPushButton { background-color: #17a2b8; color: white; padding: 8px; border-radius: 5px; }"
+    loadModelButton->setStyleSheet("QPushButton { background-color: #17a2b8; color: white; padding: 8px; border-radius: 5px; font-weight: bold;}"
                                    "QPushButton:hover { background-color: #138496; }");
     connect(loadModelButton, &QPushButton::clicked, this, &FishingForecastWindow::onLoadModelClicked);
 
@@ -220,10 +221,16 @@ void FishingForecastWindow::createResultGroup()
     QVBoxLayout *layout = new QVBoxLayout(resultGroup);
 
     predictButton = new QPushButton("Получить прогноз", this);
-    predictButton->setStyleSheet("QPushButton { background-color: #007bff; color: white; padding: 10px; border-radius: 5px; font-size: 16px; }"
+    predictButton->setStyleSheet("QPushButton { background-color: #007bff; color: white; padding: 8px; border-radius: 5px; font-weight: bold;}"
                                  "QPushButton:hover { background-color: #0056b3; }");
     connect(predictButton, &QPushButton::clicked, this, &FishingForecastWindow::onMakePredictionClicked);
     layout->addWidget(predictButton);
+
+    interpretButton = new QPushButton("Показать влияние факторов", this);
+    interpretButton->setStyleSheet("QPushButton { background-color: #ffc107; color: white; padding: 8px; border-radius: 5px; font-weight: bold;}"
+                                   "QPushButton:hover { background-color: #e0a800; }");
+    connect(interpretButton, &QPushButton::clicked, this, &FishingForecastWindow::interpretCoefficients);
+    layout->addWidget(interpretButton);
 
     // Вероятность клева
     probabilityLabel = new QLabel("Вероятность клева: —", this);
@@ -420,19 +427,17 @@ void FishingForecastWindow::onTrainModelClicked()
         int n_samples = records.size();
         int n_features = 9;
         int min_needed = n_features * 10;
-
-        metricsText += "═══════════════════════════════════════\n";
-        metricsText += "📊 ДАННЫЕ:\n";
+        metricsText += "ДАННЫЕ:\n";
         metricsText += QString("   Записей: %1 (мин. нужно: %2)\n").arg(n_samples).arg(min_needed);
 
         if (n_samples >= min_needed) {
-            metricsText += "   ✅ Данных достаточно\n";
+            metricsText += "   Данных достаточно\n";
         } else {
             metricsText += QString("   ⚠ Нужно еще %1 записей\n").arg(min_needed - n_samples);
         }
 
         // Метрики
-        metricsText += "\n📈 КАЧЕСТВО МОДЕЛИ:\n";
+        metricsText += "\nКАЧЕСТВО МОДЕЛИ:\n";
         metricsText += QString("   R² (общая): %1\n").arg(modelMetrics.r2, 0, 'f', 4);
         metricsText += QString("   Train R²: %1\n").arg(modelMetrics.train_r2, 0, 'f', 4);
         metricsText += QString("   Test R²: %1\n").arg(modelMetrics.test_r2, 0, 'f', 4);
@@ -455,7 +460,8 @@ void FishingForecastWindow::onTrainModelClicked()
             metricsText += "   ✅ Модель стабильна\n";
         }
 
-        metricsText += "═══════════════════════════════════════";
+
+        interpretCoefficients();
 
         QMessageBox::information(this, "Результаты обучения", metricsText);
     }
@@ -534,8 +540,7 @@ void FishingForecastWindow::updatePredictionResult(double probability, double ex
 
     QString recommendation;
     if (percent >= 70) {
-        recommendation = "Отличные условия для рыбалки! Высокая вероятность хорошего улова. "
-                         "Рекомендуется использовать различные приманки.";
+        recommendation = "Отличные условия для рыбалки! Высокая вероятность хорошего улова. ";
     } else if (percent >= 40) {
         recommendation = "Умеренная вероятность клева. Стоит попробовать порыбачить, "
                          "но не рассчитывайте на рекордный улов.";
@@ -603,5 +608,46 @@ void FishingForecastWindow::onWeatherError(const QString &error)
 {
     QMessageBox::warning(this, "Ошибка",
                          "Не удалось загрузить погоду:\n" + error);
+}
+
+void FishingForecastWindow::interpretCoefficients()
+{
+    if (!model.isValid) {
+        QMessageBox::warning(this, "Предупреждение", "Модель не загружена!");
+        return;
+    }
+
+    QString result;
+    result += "ВЛИЯНИЕ ФАКТОРОВ НА КЛЕВ:\n";
+
+    result += "Температура воздуха: " + QString::number(model.coefficients[0], 'f', 4);
+    result += (model.coefficients[0] > 0 ? " улучшает\n" : " ухудшает\n");
+
+    result += "Давление: " + QString::number(model.coefficients[1], 'f', 4);
+    result += (model.coefficients[1] > 0 ? " улучшает\n" : " ухудшает\n");
+
+    result += "Температура воды: " + QString::number(model.coefficients[2], 'f', 4);
+    result += (model.coefficients[2] > 0 ? " улучшает\n" : " ухудшает\n");
+
+    result += "Скорость ветра: " + QString::number(model.coefficients[3], 'f', 4);
+    result += (model.coefficients[3] > 0 ? " улучшает\n" : " ухудшает\n");
+
+    result += "Направление ветра: " + QString::number(model.coefficients[4], 'f', 4);
+    result += (model.coefficients[4] > 0 ? " улучшает\n" : " ухудшает\n");
+
+    result += "Время суток: " + QString::number(model.coefficients[5], 'f', 4);
+    result += (model.coefficients[5] > 0 ? " улучшает\n" : " ухудшает\n");
+
+    result += "Сезон: " + QString::number(model.coefficients[6], 'f', 4);
+    result += (model.coefficients[6] > 0 ? " улучшает\n" : " ухудшает\n");
+
+    result += "Фаза луны: " + QString::number(model.coefficients[7], 'f', 4);
+    result += (model.coefficients[7] > 0 ? " улучшает\n" : " ухудшает\n");
+
+    result += "Наличие рыболовного прессинга за последние 24 часа: " + QString::number(model.coefficients[8], 'f', 4);
+    result += (model.coefficients[8] > 0 ? " улучшает\n" : " ухудшает\n");
+
+
+    QMessageBox::information(this, "Интерпретация модели", result);
 }
 

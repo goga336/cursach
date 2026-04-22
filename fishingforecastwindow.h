@@ -66,6 +66,7 @@ private:
     void exportToCSV();
     void trainModelPy();
     bool loadPythonModel(const QString& filename);
+    void interpretCoefficients();
 
 
     bool trainLinearRegression();
@@ -101,6 +102,7 @@ private:
     QPushButton *predictButton;
     QPushButton *backButton;
     QPushButton *weatherButton;
+    QPushButton *interpretButton;
 
 
     QVector<QDate> dates;

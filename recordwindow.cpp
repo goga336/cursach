@@ -34,7 +34,7 @@ void RecordWindow::setupUI()
 
     this->setWindowTitle("Добавление записи о дне");
     this->resize(800, 600);
-
+    //this->setFixedSize(800, 500);
     // Создаем центральный виджет
     QWidget *centralWidget = new QWidget(this);
     this->setCentralWidget(centralWidget);
@@ -168,7 +168,7 @@ void RecordWindow::setupUI()
     moonPhase->addItems({"Новолуние", "Растущий серп", "Полнолуние", "Убывающий серп"});
     box->addWidget(moonPhase);
 
-    QLabel *recentActivityl = new QLabel("Активность прессинг:");
+    QLabel *recentActivityl = new QLabel("Наличие рыболовного прессинга за последние 24 часа:");
     recentActivityl->setStyleSheet("color: black;");
     box->addWidget(recentActivityl);
 
@@ -213,6 +213,7 @@ void RecordWindow::setupUI()
                                              "Город:", cities, 0, false, &ok);
         if (ok && !city.isEmpty()) {
             weather->requestWeather(city);
+
         }
     });
 
