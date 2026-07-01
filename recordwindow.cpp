@@ -168,7 +168,7 @@ void RecordWindow::setupUI()
     moonPhase->addItems({"Новолуние", "Растущий серп", "Полнолуние", "Убывающий серп"});
     box->addWidget(moonPhase);
 
-    QLabel *recentActivityl = new QLabel("Наличие рыболовного прессинга за последние 24 часа:");
+    QLabel *recentActivityl = new QLabel("Наличие рыболовного прессинга за последние 48 часов:");
     recentActivityl->setStyleSheet("color: black;");
     box->addWidget(recentActivityl);
 

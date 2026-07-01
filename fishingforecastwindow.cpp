@@ -149,7 +149,7 @@ void FishingForecastWindow::createInputGroup()
     layout->addRow("Фаза луны:", moonPhaseCombo);
 
     // Недавняя активность
-    recentActivityCheck = new QCheckBox("Был ли рыболовный прессинг за последние 24 часа?", this);
+    recentActivityCheck = new QCheckBox("Был ли рыболовный прессинг за последние 48 часов?", this);
     recentActivityCheck->setStyleSheet("QCheckBox { color: white; }");
     layout->addRow("", recentActivityCheck);
 
@@ -348,9 +348,9 @@ void FishingForecastWindow::trainModelPy() {
     QString modelPath = "/home/goga/Desktop/study/8_semestr/diplom/fish_app/cursach/build/Desktop-Debug/model_coefficients.json";
     if (loadPythonModel(modelPath)) {
         modelLoaded = true;
-        modelStatusLabel->setText("Модель обучена через Python");
+        modelStatusLabel->setText("Модель обучена");
         modelStatusLabel->setStyleSheet("color: #28a745; font-style: normal;");
-        QMessageBox::information(this, "Успех", "Модель обучена через Python!");
+        //QMessageBox::information(this, "Успех", "Модель обучена через Python!");
     }
 }
 
@@ -415,7 +415,7 @@ void FishingForecastWindow::onTrainModelClicked()
 
     trainingProgress->setVisible(true);
     trainingProgress->setValue(0);
-    modelStatusLabel->setText("Обучение модели через Python...");
+    modelStatusLabel->setText("Обучение модели...");
     modelStatusLabel->setStyleSheet("color: #ffc075; font-style: italic;");
 
     trainModelPy();
@@ -425,10 +425,10 @@ void FishingForecastWindow::onTrainModelClicked()
 
         // Проверка данных
         int n_samples = records.size();
-        int n_features = 9;
+        int n_features = 1;
         int min_needed = n_features * 10;
         metricsText += "ДАННЫЕ:\n";
-        metricsText += QString("   Записей: %1 (мин. нужно: %2)\n").arg(n_samples).arg(min_needed);
+        //metricsText += QString("   Записей: %1 (мин. нужно: %2)\n").arg(n_samples).arg(min_needed);
 
         if (n_samples >= min_needed) {
             metricsText += "   Данных достаточно\n";
@@ -461,7 +461,7 @@ void FishingForecastWindow::onTrainModelClicked()
         }
 
 
-        interpretCoefficients();
+        //interpretCoefficients();
 
         QMessageBox::information(this, "Результаты обучения", metricsText);
     }
@@ -644,7 +644,7 @@ void FishingForecastWindow::interpretCoefficients()
     result += "Фаза луны: " + QString::number(model.coefficients[7], 'f', 4);
     result += (model.coefficients[7] > 0 ? " улучшает\n" : " ухудшает\n");
 
-    result += "Наличие рыболовного прессинга за последние 24 часа: " + QString::number(model.coefficients[8], 'f', 4);
+    result += "Наличие рыболовного прессинга за последние 48 часов: " + QString::number(model.coefficients[8], 'f', 4);
     result += (model.coefficients[8] > 0 ? " улучшает\n" : " ухудшает\n");
 
 

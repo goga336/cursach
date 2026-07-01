@@ -166,8 +166,16 @@ void WeatherWindow::handleWeatherResponse(QNetworkReply *reply)
         labelWeather->setStyleSheet(labelStyle);
     }
     else
-    {
-        labelWeather->setText("Ошибка при загрузке погоды.");
+    {   // Вариант 1: Подробная информация об ошибке
+        QString errorMsg = QString("Ошибка при загрузке погоды:\n"
+                                   "Код ошибки: %1\n"
+                                   "Описание: %2\n"
+                                   "URL: %3")
+                               .arg(reply->error())
+                               .arg(reply->errorString())
+                               .arg(reply->url().toString());
+        labelWeather->setText(errorMsg);
+        //labelWeather->setText("Ошибка при загрузке погоды.");
     }
     reply->deleteLater();
 }
